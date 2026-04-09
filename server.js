@@ -30,6 +30,8 @@ db.exec(`
     current_zone TEXT,
     pos_x REAL DEFAULT 50,
     pos_y REAL DEFAULT 50,
+    lat REAL,
+    lng REAL,
     status TEXT DEFAULT 'active',
     briefing_completed INTEGER DEFAULT 0,
     epi_verified INTEGER DEFAULT 0,
@@ -95,6 +97,8 @@ db.exec(`
     category TEXT,
     status TEXT DEFAULT 'sent',
     media_type TEXT,
+    lat REAL,
+    lng REAL,
     ai_summary TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
@@ -136,6 +140,15 @@ db.exec(`
     waypoints TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_code TEXT NOT NULL,
+    to_code TEXT NOT NULL,
+    message TEXT NOT NULL,
+    is_ai INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS semaphore_state (
     id INTEGER PRIMARY KEY,
     level TEXT DEFAULT 'yellow',
@@ -158,13 +171,13 @@ if (workerCount === 0) {
   insertZone.run('TALLER', 'Taller Mecánico', 'Nave 2 — Prefabricación', 40, 6, 'low', 36.1951, -5.3852, 30, 48);
 
   // Workers
-  const insertWorker = db.prepare('INSERT INTO workers (code, name, role, company, team, current_zone, pos_x, pos_y, briefing_completed, epi_verified) VALUES (?,?,?,?,?,?,?,?,?,?)');
-  insertWorker.run('JL', 'José Luis Martínez', 'Tubero', 'MASA Industrial S.L.', 'Equipo B3', 'H-100', 50, 50, 1, 1);
-  insertWorker.run('AR', 'Ahmed Raza', 'Soldador', 'Técnicas Reunidas', 'Equipo A1', 'H-100', 68, 26, 1, 1);
-  insertWorker.run('PS', 'Pedro Sánchez', 'Op. Grúa', 'Grúas del Sur', 'Grúas', 'H-100', 44, 14, 1, 1);
-  insertWorker.run('ML', 'María López', 'Vigía', 'MASA Industrial S.L.', 'Equipo A2', 'TK-123', 12, 55, 1, 1);
-  insertWorker.run('FC', 'Francisco Castro', 'Electricista', 'Eléctrica Sur', 'Equipo E1', 'RACK-N', 60, 20, 1, 1);
-  insertWorker.run('IG', 'Isabel García', 'Inspectora', 'Bureau Veritas', 'Inspección', 'C-201', 35, 65, 1, 1);
+  const insertWorker = db.prepare('INSERT INTO workers (code, name, role, company, team, current_zone, pos_x, pos_y, lat, lng, briefing_completed, epi_verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+  insertWorker.run('JL', 'José Luis Martínez', 'Tubero', 'MASA Industrial S.L.', 'Equipo B3', 'H-100', 50, 50, 36.1963, -5.3848, 1, 1);
+  insertWorker.run('AR', 'Ahmed Raza', 'Soldador', 'Técnicas Reunidas', 'Equipo A1', 'H-100', 68, 26, 36.1967, -5.3843, 1, 1);
+  insertWorker.run('PS', 'Pedro Sánchez', 'Op. Grúa', 'Grúas del Sur', 'Grúas', 'H-100', 44, 14, 36.1971, -5.3851, 1, 1);
+  insertWorker.run('ML', 'María López', 'Vigía', 'MASA Industrial S.L.', 'Equipo A2', 'TK-123', 12, 55, 36.1954, -5.3813, 1, 1);
+  insertWorker.run('FC', 'Francisco Castro', 'Electricista', 'Eléctrica Sur', 'Equipo E1', 'RACK-N', 60, 20, 36.1971, -5.3819, 1, 1);
+  insertWorker.run('IG', 'Isabel García', 'Inspectora', 'Bureau Veritas', 'Inspección', 'C-201', 35, 65, 36.1960, -5.3831, 1, 1);
 
   // Tasks for JL
   const insertTask = db.prepare('INSERT INTO tasks (title, type, zone_id, worker_id, start_time, end_time, permit_code, risk_level, status, epi_required, critical_controls, description) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
@@ -328,8 +341,8 @@ app.post('/api/reports', (req, res) => {
   else if (type === 'near_miss') category = 'Near Miss';
 
   const result = db.prepare(
-    'INSERT INTO reports (worker_id, type, description, zone_id, category, status, media_type, ai_summary, created_at) VALUES (?,?,?,?,?,?,?,?,datetime("now"))'
-  ).run(worker.id, type, description, zone_id || null, category, 'sent', media_type || 'text', description);
+    'INSERT INTO reports (worker_id, type, description, zone_id, category, status, media_type, lat, lng, ai_summary, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,datetime("now"))'
+  ).run(worker.id, type, description, zone_id || null, category, 'sent', media_type || 'text', req.body.lat || null, req.body.lng || null, description);
 
   res.json({ ok: true, id: result.lastInsertRowid, category });
 });
@@ -475,6 +488,92 @@ app.get('/api/workers-critical', (req, res) => {
     ORDER BY z.risk_level DESC, w.name
   `).all();
   res.json(workers);
+});
+
+// All workers with GPS positions for map
+app.get('/api/workers-map', (req, res) => {
+  const workers = db.prepare(`
+    SELECT w.code, w.name, w.role, w.company, w.lat, w.lng, w.current_zone, w.status, z.name as zone_name
+    FROM workers w LEFT JOIN zones z ON w.current_zone = z.code
+    WHERE w.status = 'active'
+  `).all();
+  res.json(workers);
+});
+
+// Recent incidents for map display
+app.get('/api/incidents-map', (req, res) => {
+  const incidents = db.prepare(`
+    SELECT r.*, w.name as worker_name, w.code as worker_code, z.name as zone_name, z.lat as zone_lat, z.lng as zone_lng
+    FROM reports r
+    LEFT JOIN workers w ON r.worker_id = w.id
+    LEFT JOIN zones z ON r.zone_id = z.id
+    ORDER BY r.created_at DESC LIMIT 20
+  `).all();
+  const mapped = incidents.map(i => ({ ...i, lat: i.lat || i.zone_lat, lng: i.lng || i.zone_lng }));
+  res.json(mapped);
+});
+
+// Chat with SENTINEL AI
+app.post('/api/chat', (req, res) => {
+  const { worker_code, message } = req.body;
+  if (!worker_code || !message) return res.status(400).json({ error: 'worker_code and message required' });
+  const worker = db.prepare('SELECT * FROM workers WHERE code = ?').get(worker_code);
+  if (!worker) return res.status(404).json({ error: 'Worker not found' });
+  const zone = db.prepare('SELECT * FROM zones WHERE code = ?').get(worker.current_zone);
+  const hazards = zone ? db.prepare('SELECT * FROM hazards WHERE zone_id = ? AND active = 1').all(zone.id) : [];
+  const workerName = worker.name.split(' ')[0];
+  const msg = message.toLowerCase();
+  let response = '';
+  if (msg.includes('empezar') || msg.includes('puedo') || msg.includes('comenzar')) {
+    const conflicts = zone ? db.prepare("SELECT * FROM simops_conflicts WHERE zone_id = ? AND status IN ('active','blocked')").all(zone.id) : [];
+    const activeH = hazards.filter(h => h.severity === 'high' || h.severity === 'critical');
+    if (conflicts.some(c => c.status === 'blocked')) {
+      response = `${workerName}, ⛔ NO puedes empezar ahora. Hay una restricción activa en ${zone.name}. Contacta con tu supervisor M. García.`;
+    } else if (activeH.find(h => h.type === 'crane')) {
+      const crane = activeH.find(h => h.type === 'crane');
+      response = `${workerName}, ⏳ Espera. Izado activo hasta las ${crane.end_time} con zona de exclusión de ${crane.distance_m}m. Usa la escalera oeste. Tu tarea puede empezar a las 08:15.`;
+    } else if (activeH.length > 0) {
+      response = `${workerName}, ✅ Puedes empezar con precaución. ${activeH.length} riesgo(s) activo(s): ${activeH.map(h => h.title).join(', ')}. Aplica las medidas indicadas.`;
+    } else {
+      response = `${workerName}, ✅ Puedes empezar. Todos los controles verificados. Zona despejada. Recuerda completar el checklist.`;
+    }
+  } else if (msg.includes('riesgo') || msg.includes('peligro') || msg.includes('zona')) {
+    if (hazards.length === 0) {
+      response = `${workerName}, ✅ No hay riesgos activos en ${zone ? zone.name : 'tu zona'} ahora mismo.`;
+    } else {
+      const icons = { hot_work: '🔥', crane: '🏗️', confined_space: '⛔', electrical: '⚡' };
+      response = `${workerName}, hay ${hazards.length} riesgo(s) en ${zone.name}:\n\n`;
+      hazards.forEach(h => { response += `${icons[h.type]||'⚠'} ${h.title} — ${h.distance_m}m ${h.direction}\n→ ${h.action_required}\n\n`; });
+    }
+  } else if (msg.includes('evacuación') || msg.includes('evacuar') || msg.includes('reunión') || msg.includes('escape') || msg.includes('ruta')) {
+    const route = zone ? db.prepare('SELECT * FROM escape_routes WHERE zone_id = ?').get(zone.id) : null;
+    if (route) {
+      response = `${workerName}, tu ruta de evacuación:\n\n🏁 ${route.muster_point} (~${route.distance_m}m)\n📍 ${route.route_description}\n${route.route_clear ? '✅ Ruta libre' : '⚠ Verificar ruta'}\n\nPulsa el botón en la pestaña Mapa para ver la ruta visual con guía GPS.`;
+    } else {
+      response = `${workerName}, no tengo ruta de evacuación configurada para tu zona actual. Consulta con tu supervisor.`;
+    }
+  } else if (msg.includes('supervisor') || msg.includes('contactar') || msg.includes('llamar')) {
+    response = `${workerName}, tu supervisor de turno es M. García 📻 Canal radio 7. Puedes enviarle un mensaje seleccionando su contacto arriba, o llamar por radio Canal 7.`;
+  } else if (msg.includes('epi') || msg.includes('protección') || msg.includes('equipo')) {
+    const tasks = db.prepare("SELECT * FROM tasks WHERE worker_id = ? AND status IN ('scheduled','in-progress') ORDER BY start_time LIMIT 1").all(worker.id);
+    if (tasks.length > 0 && tasks[0].epi_required) {
+      const epi = JSON.parse(tasks[0].epi_required);
+      response = `${workerName}, para tu tarea actual necesitas:\n\n${epi.map(e => '🦺 ' + e).join('\n')}\n\n${epi.some(e => e.includes('Respirador')) ? '⚠ Respirador ABE1 obligatorio durante trabajo en caliente (08:00-10:00)' : ''}`;
+    } else {
+      response = `${workerName}, no tienes tareas activas con requisitos EPI específicos.`;
+    }
+  } else if (msg.includes('tiempo') || msg.includes('viento') || msg.includes('weather')) {
+    response = `${workerName}, condiciones actuales en San Roque:\n\n🌡️ 19°C | 💨 Viento NE 12 km/h\n☀️ Despejado | Humedad 65%\n\nEl viento NE puede dispersar gases de soldadura. Respirador ABE1 obligatorio 08:00-10:00.`;
+  } else if (msg.includes('hola') || msg.includes('buenos') || msg.includes('hey')) {
+    response = `¡Buenos días, ${workerName}! 👋 Soy SENTINEL, tu copiloto de seguridad para la parada técnica.\n\n¿En qué puedo ayudarte?\n• Riesgos en tu zona\n• ¿Puedo empezar mi tarea?\n• Ruta de evacuación\n• Contactar supervisor\n• EPI requerido`;
+  } else if (msg.includes('gracias') || msg.includes('thanks')) {
+    response = `De nada, ${workerName}. Estoy aquí 24/7 durante la parada. ¡Trabaja seguro! 💪`;
+  } else {
+    response = `${workerName}, entendido. Estás en ${zone ? zone.name : 'planta'} con ${hazards.length} riesgo(s) activo(s).\n\n¿Puedo ayudarte con algo específico?\n• Riesgos en tu zona\n• ¿Puedo empezar?\n• Ruta de evacuación\n• Contactar supervisor`;
+  }
+  db.prepare('INSERT INTO chat_messages (from_code, to_code, message, is_ai) VALUES (?, ?, ?, ?)').run(worker_code, 'SENTINEL_AI', message, 0);
+  db.prepare('INSERT INTO chat_messages (from_code, to_code, message, is_ai) VALUES (?, ?, ?, ?)').run('SENTINEL_AI', worker_code, response, 1);
+  res.json({ response, timestamp: new Date().toISOString() });
 });
 
 // Serve main app

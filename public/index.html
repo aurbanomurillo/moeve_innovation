@@ -699,6 +699,225 @@
     border-radius: 12px;
   }
   @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ═══ Worker dots on map ═══ */
+  .worker-map-dot {
+    position: absolute; z-index: 14; transform: translate(-50%, -50%);
+    cursor: pointer; transition: all .3s; display: flex; flex-direction: column; align-items: center; gap: 1px;
+  }
+  .worker-map-dot:active { transform: translate(-50%, -50%) scale(1.2); }
+  .wmd-circle {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 900; color: white;
+    border: 2px solid rgba(255,255,255,.9);
+    box-shadow: 0 3px 10px rgba(0,0,0,.2);
+  }
+  .wmd-name {
+    font-size: 7px; font-weight: 800; color: white;
+    background: rgba(15,31,49,.65); padding: 1px 5px; border-radius: 3px;
+    white-space: nowrap; backdrop-filter: blur(4px);
+  }
+
+  /* ═══ Incident dots on map ═══ */
+  .incident-map-dot {
+    position: absolute; z-index: 13; transform: translate(-50%, -50%);
+    cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px;
+  }
+  .imd-circle {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(219,74,67,.85); border: 2px solid white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; animation: incidentPulse 2s infinite;
+    box-shadow: 0 3px 12px rgba(219,74,67,.3);
+  }
+  @keyframes incidentPulse { 0%,100%{box-shadow:0 0 6px rgba(219,74,67,.2)} 50%{box-shadow:0 0 18px rgba(219,74,67,.5)} }
+  .imd-label {
+    font-size: 7px; font-weight: 800; color: white; max-width: 70px;
+    background: rgba(219,74,67,.7); padding: 1px 4px; border-radius: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ═══ Map layer toggles ═══ */
+  .map-layers {
+    position: absolute; top: 8px; left: 8px; z-index: 18;
+    display: flex; gap: 4px;
+  }
+  .map-layer-btn {
+    font-size: 8px; font-weight: 800; padding: 4px 8px;
+    border-radius: 999px; border: 1px solid rgba(255,255,255,.5);
+    background: rgba(255,255,255,.85); backdrop-filter: blur(8px);
+    cursor: pointer; color: var(--ink-soft);
+    box-shadow: var(--shadow-sm); transition: all .2s;
+  }
+  .map-layer-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+
+  /* ═══ Worker popup on map ═══ */
+  .worker-popup {
+    position: absolute; z-index: 25; bottom: 100%; left: 50%;
+    transform: translateX(-50%); margin-bottom: 8px;
+    background: rgba(255,255,255,.96); border: 1px solid var(--line);
+    border-radius: var(--radius-md); padding: 12px 14px;
+    box-shadow: var(--shadow-lg); backdrop-filter: blur(16px);
+    min-width: 170px; animation: fadeUp .2s ease;
+  }
+  .worker-popup::after {
+    content: ''; position: absolute; bottom: -6px; left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 12px; height: 12px; background: white;
+    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .wp-name { font-size: 13px; font-weight: 800; }
+  .wp-role { font-size: 11px; color: var(--ink-soft); margin-bottom: 8px; }
+  .wp-actions { display: flex; gap: 6px; }
+  .wp-action {
+    flex: 1; padding: 8px; border-radius: 10px; text-align: center;
+    font-size: 11px; font-weight: 800; cursor: pointer; border: 1px solid var(--line);
+    background: var(--panel-2); transition: all .15s;
+  }
+  .wp-action:active { background: rgba(12,141,231,.06); border-color: var(--blue); }
+  .wp-action.chat-action { background: rgba(12,141,231,.06); border-color: rgba(12,141,231,.2); color: var(--blue); }
+
+  /* ═══ Notification banner ═══ */
+  .notif-banner {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%) translateY(-100%);
+    max-width: 440px; width: 100%; z-index: 250;
+    background: linear-gradient(135deg, rgba(219,74,67,.95), rgba(255,123,115,.95));
+    color: white; padding: 14px 20px; font-size: 13px; font-weight: 700;
+    box-shadow: 0 8px 30px rgba(219,74,67,.3);
+    backdrop-filter: blur(16px); transition: transform .4s ease;
+    display: flex; align-items: center; gap: 12px; cursor: pointer;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+  }
+  .notif-banner.show { transform: translateX(-50%) translateY(0); }
+  .notif-banner .notif-icon { font-size: 22px; flex-shrink: 0; }
+  .notif-banner .notif-text { flex: 1; }
+  .notif-banner .notif-close { font-size: 18px; opacity: .7; }
+
+  /* ═══════════════════════════════════════════ */
+  /* SCREEN 4: CHAT                             */
+  /* ═══════════════════════════════════════════ */
+  .chat-screen-wrap {
+    display: flex; flex-direction: column; height: calc(100vh - 200px);
+  }
+  .chat-contacts-strip {
+    display: flex; gap: 10px; padding: 0 16px 12px;
+    overflow-x: auto; flex-shrink: 0;
+  }
+  .chat-contact {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; min-width: 54px; flex-shrink: 0;
+    transition: transform .15s;
+  }
+  .chat-contact:active { transform: scale(.95); }
+  .chat-contact.active .cc-avatar { border-color: var(--blue); box-shadow: 0 4px 14px rgba(12,141,231,.25); }
+  .cc-avatar {
+    width: 44px; height: 44px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 900; color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+    border: 2.5px solid transparent; position: relative;
+  }
+  .cc-avatar.ai { background: var(--gradient-brand); }
+  .cc-online {
+    position: absolute; bottom: -1px; right: -1px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--success); border: 2px solid white;
+  }
+  .cc-name {
+    font-size: 9px; font-weight: 700; color: var(--ink-soft);
+    text-align: center; max-width: 56px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chat-contact.active .cc-name { color: var(--blue); font-weight: 800; }
+
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 0 16px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .chat-msg {
+    max-width: 82%; display: flex; flex-direction: column; gap: 2px;
+    animation: fadeUp .2s ease;
+  }
+  .chat-msg.sent { align-self: flex-end; }
+  .chat-msg.received { align-self: flex-start; }
+  .chat-msg-bubble {
+    padding: 12px 16px; border-radius: 18px;
+    font-size: 13px; line-height: 1.55; font-weight: 500;
+    white-space: pre-line;
+  }
+  .chat-msg.sent .chat-msg-bubble {
+    background: var(--gradient-brand); color: white;
+    border-bottom-right-radius: 6px;
+  }
+  .chat-msg.received .chat-msg-bubble {
+    background: rgba(255,255,255,.92); border: 1px solid var(--line);
+    color: var(--ink); border-bottom-left-radius: 6px;
+    box-shadow: var(--shadow-sm);
+  }
+  .chat-msg-meta {
+    font-size: 10px; color: var(--ink-faint); font-weight: 600; padding: 0 4px;
+  }
+  .chat-msg.sent .chat-msg-meta { text-align: right; }
+
+  .chat-typing {
+    display: flex; gap: 4px; padding: 12px 16px;
+    align-self: flex-start;
+    background: rgba(255,255,255,.92); border: 1px solid var(--line);
+    border-radius: 18px; border-bottom-left-radius: 6px;
+  }
+  .chat-typing-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ink-faint);
+    animation: typingBounce .8s infinite ease-in-out;
+  }
+  .chat-typing-dot:nth-child(2) { animation-delay: .15s; }
+  .chat-typing-dot:nth-child(3) { animation-delay: .3s; }
+  @keyframes typingBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+  .chat-quick-actions {
+    display: flex; gap: 6px; padding: 8px 16px;
+    overflow-x: auto; flex-shrink: 0;
+  }
+  .chat-quick-btn {
+    font-size: 11px; font-weight: 700; padding: 7px 14px;
+    border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.88); color: var(--ink-soft);
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    transition: all .15s; backdrop-filter: blur(8px);
+  }
+  .chat-quick-btn:active { border-color: var(--blue); color: var(--blue); background: rgba(12,141,231,.04); }
+
+  .chat-input-bar {
+    display: flex; gap: 8px; padding: 12px 16px 8px;
+    align-items: center; flex-shrink: 0;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(16px);
+    border-top: 1px solid var(--line);
+  }
+  .chat-input {
+    flex: 1; padding: 11px 16px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--panel-2);
+    font-size: 14px; font-family: Inter, sans-serif;
+    color: var(--ink); outline: none; transition: border-color .2s;
+  }
+  .chat-input:focus { border-color: var(--blue); }
+  .chat-input::placeholder { color: var(--ink-faint); }
+  .chat-send-btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--gradient-brand); border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: white; cursor: pointer;
+    box-shadow: 0 6px 16px rgba(12,141,231,.25);
+    flex-shrink: 0; transition: transform .15s;
+  }
+  .chat-send-btn:active { transform: scale(.9); }
+  .chat-mic-btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--panel); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer; flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -722,6 +941,13 @@
     <div class="header-btn" onclick="showToast('Canal radio 7 · Supervisor: M. García')">📻</div>
     <div class="header-btn">🔔<div class="dot"></div></div>
   </div>
+</div>
+
+<!-- NOTIFICATION BANNER -->
+<div class="notif-banner" id="notifBanner" onclick="dismissNotif()">
+  <div class="notif-icon">⚠️</div>
+  <div class="notif-text" id="notifText"></div>
+  <div class="notif-close">✕</div>
 </div>
 
 <!-- WORKER CARD (loaded from API) -->
@@ -753,7 +979,14 @@
           <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="2s" repeatCount="indefinite"/>
         </polyline>
       </svg>
+      <div class="map-layers">
+        <div class="map-layer-btn active" onclick="toggleMapLayer('workers',this)">👷 Personas</div>
+        <div class="map-layer-btn active" onclick="toggleMapLayer('hazards',this)">⚠ Riesgos</div>
+        <div class="map-layer-btn" onclick="toggleMapLayer('incidents',this)">📋 Incidencias</div>
+      </div>
       <div id="radarBlips"></div>
+      <div id="workerDots"></div>
+      <div id="incidentDots" style="display:none;"></div>
       <div class="user-gps-dot" id="userDot" style="left:34%;top:30%;">
         <div class="gps-accuracy" id="gpsAccuracy"></div>
         <div class="gps-dot-inner">👷</div>
@@ -840,26 +1073,24 @@
   </div>
 </div>
 
-<!-- ═══════ SCREEN 4: SUPERVISOR ═══════ -->
-<div class="screen" id="screen-sup">
-  <div class="sup-title">Panel de Supervisión</div>
-  <div class="kpi-scroll" id="kpiRow"></div>
-
-  <div class="heatmap-card">
-    <div style="padding:16px 20px 10px;">
-      <div class="section-label" style="margin:0;">Mapa de calor — Densidad y riesgo</div>
+<!-- ═══════ SCREEN 4: CHAT ═══════ -->
+<div class="screen" id="screen-chat">
+  <div class="chat-screen-wrap">
+    <div class="section-label" style="padding-left:20px;">Contactos</div>
+    <div class="chat-contacts-strip" id="chatContacts"></div>
+    <div class="chat-quick-actions" id="chatQuickActions">
+      <div class="chat-quick-btn" onclick="sendQuickChat('¿Puedo empezar mi tarea?')">¿Puedo empezar?</div>
+      <div class="chat-quick-btn" onclick="sendQuickChat('¿Qué riesgos hay en mi zona?')">Riesgos zona</div>
+      <div class="chat-quick-btn" onclick="sendQuickChat('¿Cuál es mi ruta de evacuación?')">Evacuación</div>
+      <div class="chat-quick-btn" onclick="sendQuickChat('¿Qué EPI necesito?')">EPI</div>
+      <div class="chat-quick-btn" onclick="sendQuickChat('¿Cómo está el tiempo?')">Tiempo</div>
     </div>
-    <div class="heatmap" id="heatmap" style="position:relative;">
-      <img src="/map/planta.png" style="width:100%;display:block;opacity:.85;" alt="Planta" draggable="false">
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-bar">
+      <button class="chat-mic-btn" onclick="toggleChatVoice()">🎙️</button>
+      <input type="text" class="chat-input" id="chatInput" placeholder="Pregunta a SENTINEL..." onkeydown="if(event.key==='Enter')sendChatMessage()">
+      <button class="chat-send-btn" onclick="sendChatMessage()">➤</button>
     </div>
-  </div>
-
-  <div class="simops-list" id="simopsList">
-    <div class="section-label">Conflictos SIMOPS</div>
-  </div>
-
-  <div class="workers-critical" id="workersCritical">
-    <div class="section-label">Trabajadores en zonas críticas</div>
   </div>
 </div>
 
@@ -874,8 +1105,8 @@
   <div class="nav-item alert-nav" data-screen="alert" onclick="switchScreen('alert',this)">
     <div class="nav-icon">🚨</div>Alertar
   </div>
-  <div class="nav-item" data-screen="sup" onclick="switchScreen('sup',this)">
-    <div class="nav-icon">🗺️</div>Supervisor
+  <div class="nav-item" data-screen="chat" onclick="switchScreen('chat',this)">
+    <div class="nav-icon">💬</div>Chat
   </div>
 </div>
 
@@ -1023,7 +1254,7 @@ function switchScreen(name, el) {
   if (name === 'zone') loadZoneScreen();
   if (name === 'task') loadTaskScreen();
   if (name === 'alert') loadReports();
-  if (name === 'sup') loadSupervisor();
+  if (name === 'chat') { loadChatContacts(); }
 }
 
 // ── Load worker ──
@@ -1116,6 +1347,10 @@ async function loadZoneScreen() {
 
   // Position user dot
   updateUserDot();
+
+  // Load workers and incidents on map
+  loadWorkersOnMap();
+  loadIncidentsOnMap();
 }
 
 function openHazardModal(h) {
@@ -1349,101 +1584,281 @@ async function triggerEmergency() {
   setTimeout(() => { document.body.style.animation = ''; loadZoneScreen(); }, 4000);
 }
 
-// ── SCREEN 4: SUPERVISOR ──
-async function loadSupervisor() {
-  const dash = await api('/api/dashboard');
+// ── WORKERS & INCIDENTS ON MAP ──
+const AVATAR_COLORS = {JL:'linear-gradient(135deg,#0c8de7,#88eeb9)',AR:'linear-gradient(135deg,#d289ff,#6c3483)',PS:'linear-gradient(135deg,#ffb24a,#e67e22)',ML:'linear-gradient(135deg,#0c8de7,#102033)',FC:'linear-gradient(135deg,#ff87a5,#c0392b)',IG:'linear-gradient(135deg,#95efba,#1f9b6f)'};
+let mapLayers = { workers: true, hazards: true, incidents: false };
+let activePopup = null;
 
-  // KPIs
-  const kpiRow = document.getElementById('kpiRow');
-  kpiRow.innerHTML = '';
-  const kpis = [
-    { value: dash.active_conflicts, label: 'SIMOPS\nactivos', color: 'var(--danger)' },
-    { value: dash.workers_in_critical, label: 'Personas\nen riesgo', color: 'var(--amber)' },
-    { value: dash.active_tasks, label: 'Tareas\nactivas', color: 'var(--ink)' },
-    { value: dash.expired_permits, label: 'Permisos\nvencidos', color: 'var(--success)' }
-  ];
-  kpis.forEach(k => {
-    const card = document.createElement('div');
-    card.className = 'kpi-card';
-    card.innerHTML = `<div class="kpi-value" style="color:${k.color}">${k.value}</div><div class="kpi-label">${k.label.replace('\n','<br>')}</div>`;
-    kpiRow.appendChild(card);
-  });
+function toggleMapLayer(layer, btn) {
+  mapLayers[layer] = !mapLayers[layer];
+  btn.classList.toggle('active', mapLayers[layer]);
+  if (layer === 'workers') document.getElementById('workerDots').style.display = mapLayers.workers ? '' : 'none';
+  if (layer === 'hazards') document.getElementById('radarBlips').style.display = mapLayers.hazards ? '' : 'none';
+  if (layer === 'incidents') {
+    document.getElementById('incidentDots').style.display = mapLayers.incidents ? '' : 'none';
+    if (mapLayers.incidents) loadIncidentsOnMap();
+  }
+}
 
-  // Heatmap zones
-  const heatmap = document.getElementById('heatmap');
-  // Remove old zones
-  heatmap.querySelectorAll('.heat-zone').forEach(z => z.remove());
-  dash.zones.forEach(z => {
-    const pos = z.lat && z.lng ? gpsToPercent(z.lat, z.lng) : { x: z.pos_x, y: z.pos_y };
-    const cls = z.risk_level === 'critical' ? 'critical' : z.risk_level === 'warning' ? 'warning' : 'low';
-    const zone = document.createElement('div');
-    zone.className = 'heat-zone ' + cls;
-    zone.style.cssText = 'width:60px;height:60px;top:' + pos.y + '%;left:' + pos.x + '%;transform:translate(-50%,-50%);';
-    zone.onclick = () => showToast(z.name + ': ' + z.current_people + ' personas · Riesgo ' + z.risk_level.toUpperCase());
-    zone.innerHTML = '<div class="hz-label">' + z.code + '</div><div class="hz-count">' + z.current_people + '</div>';
-    heatmap.appendChild(zone);
-  });
-
-  // SIMOPS
-  const conflicts = await api('/api/simops');
-  const simopsEl = document.getElementById('simopsList');
-  simopsEl.innerHTML = '<div class="section-label">Conflictos SIMOPS</div>';
-  conflicts.forEach(c => {
-    const card = document.createElement('div');
-    const badgeClass = c.status === 'resolved' ? 'resolved' : c.status === 'blocked' ? 'blocked' : 'active';
-    card.className = 'simops-card' + (c.status === 'resolved' ? ' resolved' : '');
-    card.innerHTML = `
-      <div class="sc-header">
-        <div class="sc-title">${c.title}</div>
-        <div class="sc-badge ${badgeClass}">${c.status === 'resolved' ? 'Resuelto' : c.status.toUpperCase()}</div>
-      </div>
-      <div class="sc-desc">${c.description}</div>
-      ${c.status !== 'resolved' ? `
-        <div style="font-size:11px; font-weight:800; color:var(--blue); margin-bottom:8px;">IA: ${c.ai_suggestion}</div>
-        <div style="font-size:12px; font-weight:800; color:var(--success); margin-bottom:10px;">${c.impact}</div>
-        <div class="sc-actions">
-          <button class="sc-btn primary" onclick="resolveSimops(${c.id}, this)">Aceptar IA</button>
-          <button class="sc-btn secondary" onclick="showToast('Coordinador asignado a ${c.zone_name || 'zona'}')">Asignar coord.</button>
-        </div>
-      ` : ''}
-    `;
-    simopsEl.appendChild(card);
-  });
-
-  // Workers in critical
-  const workers = await api('/api/workers-critical');
-  const wcEl = document.getElementById('workersCritical');
-  wcEl.innerHTML = '<div class="section-label">Trabajadores en zonas críticas</div>';
-  const avatarColors = {JL:'linear-gradient(135deg,#0c8de7,#88eeb9)',AR:'linear-gradient(135deg,#d289ff,#6c3483)',PS:'linear-gradient(135deg,#ffb24a,#e67e22)',ML:'linear-gradient(135deg,#0c8de7,#102033)',FC:'linear-gradient(135deg,#ff87a5,#c0392b)',IG:'linear-gradient(135deg,#95efba,#1f9b6f)'};
+async function loadWorkersOnMap() {
+  const workers = await api('/api/workers-map');
+  const container = document.getElementById('workerDots');
+  container.innerHTML = '';
   workers.forEach(w => {
-    const riskCls = w.zone_risk === 'critical' ? 'background:rgba(219,74,67,.08);color:var(--danger);border:1px solid rgba(219,74,67,.15)' : 'background:rgba(255,178,74,.08);color:#a56800;border:1px solid rgba(255,178,74,.15)';
-    const item = document.createElement('div');
-    item.className = 'wc-item';
-    item.innerHTML = `
-      <div class="wc-avatar" style="background:${avatarColors[w.code]||'var(--gradient-brand)'}">${w.code}</div>
-      <div class="wc-info"><div class="wc-name">${w.name} · ${w.company}</div><div class="wc-detail">${w.zone_name} · ${w.role}</div></div>
-      <div class="wc-risk" style="${riskCls}">${w.zone_risk === 'critical' ? 'Crítico' : 'Caución'}</div>
-    `;
-    wcEl.appendChild(item);
+    if (w.code === WORKER_CODE || !w.lat || !w.lng) return;
+    const pos = gpsToPercent(w.lat, w.lng);
+    const dot = document.createElement('div');
+    dot.className = 'worker-map-dot';
+    dot.style.left = pos.x + '%';
+    dot.style.top = pos.y + '%';
+    dot.onclick = (e) => { e.stopPropagation(); showWorkerPopup(w, dot); };
+    dot.innerHTML = `<div class="wmd-circle" style="background:${AVATAR_COLORS[w.code]||'var(--gradient-brand)'}">${w.code}</div><div class="wmd-name">${w.name.split(' ')[0]}</div>`;
+    container.appendChild(dot);
   });
 }
 
-async function resolveSimops(id, btn) {
-  await api('/api/simops/' + id + '/resolve', { method: 'PUT' });
-  const card = btn.closest('.simops-card');
-  card.classList.add('resolved');
-  card.querySelector('.sc-badge').className = 'sc-badge resolved';
-  card.querySelector('.sc-badge').textContent = 'Resuelto';
-  card.querySelector('.sc-actions').remove();
-  showToast('✓ Conflicto resuelto. Enablon actualizado.');
-  // Refresh semaphore
-  loadZoneScreen();
+function showWorkerPopup(worker, dotEl) {
+  if (activePopup) activePopup.remove();
+  const popup = document.createElement('div');
+  popup.className = 'worker-popup';
+  popup.innerHTML = `
+    <div class="wp-name">${worker.name}</div>
+    <div class="wp-role">${worker.role} · ${worker.company}</div>
+    <div class="wp-actions">
+      <div class="wp-action chat-action" onclick="event.stopPropagation();openWorkerChat('${worker.code}')">💬 Chat</div>
+      <div class="wp-action" onclick="event.stopPropagation();showToast('📞 Llamando a ${worker.name.split(' ')[0]}...')">📞 Llamar</div>
+    </div>
+  `;
+  dotEl.appendChild(popup);
+  activePopup = popup;
+  const closeHandler = (e) => {
+    if (!dotEl.contains(e.target)) { popup.remove(); activePopup = null; document.removeEventListener('click', closeHandler); }
+  };
+  setTimeout(() => document.addEventListener('click', closeHandler), 50);
+}
+
+function openWorkerChat(code) {
+  const nav = document.querySelector('[data-screen="chat"]');
+  switchScreen('chat', nav);
+  setTimeout(() => {
+    chatTarget = code;
+    document.querySelectorAll('.chat-contact').forEach(c => c.classList.remove('active'));
+    const contacts = document.querySelectorAll('.chat-contact');
+    contacts.forEach(c => { if (c.dataset.code === code) c.classList.add('active'); });
+    document.getElementById('chatInput').placeholder = 'Mensaje...';
+    document.getElementById('chatQuickActions').style.display = 'none';
+    renderChatHistory();
+  }, 150);
+}
+
+async function loadIncidentsOnMap() {
+  const incidents = await api('/api/incidents-map');
+  const container = document.getElementById('incidentDots');
+  container.innerHTML = '';
+  const icons = { near_miss: '⚠', photo: '📸', voice: '🎙', positive: '👍', emergency: '🆘' };
+  incidents.forEach(inc => {
+    if (!inc.lat || !inc.lng) return;
+    const pos = gpsToPercent(inc.lat, inc.lng);
+    const dot = document.createElement('div');
+    dot.className = 'incident-map-dot';
+    dot.style.left = pos.x + '%';
+    dot.style.top = pos.y + '%';
+    dot.onclick = () => {
+      document.getElementById('modalTitle').textContent = (icons[inc.type]||'📋') + ' Incidencia reportada';
+      document.getElementById('modalBody').innerHTML = `
+        <p><strong>Reportado por:</strong> ${inc.worker_name || 'Anónimo'}</p>
+        <p><strong>Tipo:</strong> ${inc.type} · ${inc.category || ''}</p>
+        <p><strong>Descripción:</strong> ${inc.description || inc.ai_summary || '—'}</p>
+        <p><strong>Zona:</strong> ${inc.zone_name || '—'}</p>
+        <p style="font-size:11px;color:var(--ink-faint);margin-top:8px;">${new Date(inc.created_at).toLocaleString('es')}</p>
+      `;
+      document.getElementById('modal').classList.add('active');
+    };
+    dot.innerHTML = `<div class="imd-circle">${icons[inc.type]||'📋'}</div><div class="imd-label">${(inc.description||inc.type).substring(0,20)}</div>`;
+    container.appendChild(dot);
+  });
+}
+
+// ── SCREEN 4: CHAT ──
+let chatTarget = 'SENTINEL_AI';
+let chatHistory = {};
+let chatWorkersList = [];
+
+async function loadChatContacts() {
+  const workers = await api('/api/workers-map');
+  chatWorkersList = workers.filter(w => w.code !== WORKER_CODE);
+  const strip = document.getElementById('chatContacts');
+  strip.innerHTML = `
+    <div class="chat-contact active" data-code="SENTINEL_AI" onclick="selectChatContact('SENTINEL_AI', this)">
+      <div class="cc-avatar ai">🤖<div class="cc-online"></div></div>
+      <div class="cc-name">SENTINEL</div>
+    </div>
+    <div class="chat-contact" data-code="SUPERVISOR" onclick="selectChatContact('SUPERVISOR', this)">
+      <div class="cc-avatar" style="background:linear-gradient(135deg,#102033,#0c8de7)">MG<div class="cc-online"></div></div>
+      <div class="cc-name">Supervisor</div>
+    </div>
+  `;
+  chatWorkersList.forEach(w => {
+    const c = document.createElement('div');
+    c.className = 'chat-contact';
+    c.dataset.code = w.code;
+    c.onclick = () => selectChatContact(w.code, c);
+    c.innerHTML = `<div class="cc-avatar" style="background:${AVATAR_COLORS[w.code]||'var(--gradient-brand)'}">${w.code}<div class="cc-online"></div></div><div class="cc-name">${w.name.split(' ')[0]}</div>`;
+    strip.appendChild(c);
+  });
+  renderChatHistory();
+}
+
+function selectChatContact(code, el) {
+  chatTarget = code;
+  document.querySelectorAll('.chat-contact').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const input = document.getElementById('chatInput');
+  if (code === 'SENTINEL_AI') input.placeholder = 'Pregunta a SENTINEL...';
+  else if (code === 'SUPERVISOR') input.placeholder = 'Mensaje al supervisor...';
+  else input.placeholder = 'Mensaje...';
+  document.getElementById('chatQuickActions').style.display = code === 'SENTINEL_AI' ? 'flex' : 'none';
+  renderChatHistory();
+}
+
+function renderChatHistory() {
+  const container = document.getElementById('chatMessages');
+  const history = chatHistory[chatTarget] || [];
+  if (history.length === 0) {
+    let welcome = '';
+    if (chatTarget === 'SENTINEL_AI') {
+      welcome = '¡Hola! 👋 Soy SENTINEL, tu copiloto de seguridad. Puedo ayudarte con riesgos en tu zona, permisos, rutas de evacuación y más.';
+    } else if (chatTarget === 'SUPERVISOR') {
+      welcome = 'Canal directo con M. García (Supervisor de turno). Los mensajes se envían en tiempo real. 📻 Radio: Canal 7';
+    } else {
+      const w = chatWorkersList.find(w => w.code === chatTarget);
+      welcome = w ? `Canal con ${w.name} (${w.role} · ${w.company}). Zona: ${w.zone_name || '—'}` : 'Chat';
+    }
+    container.innerHTML = `<div class="chat-msg received"><div class="chat-msg-bubble">${welcome}</div><div class="chat-msg-meta">Ahora</div></div>`;
+    return;
+  }
+  container.innerHTML = '';
+  history.forEach(m => {
+    const msg = document.createElement('div');
+    msg.className = 'chat-msg ' + (m.from === WORKER_CODE ? 'sent' : 'received');
+    msg.innerHTML = `<div class="chat-msg-bubble">${m.text}</div><div class="chat-msg-meta">${m.time}</div>`;
+    container.appendChild(msg);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function addChatMessage(from, text) {
+  if (!chatHistory[chatTarget]) chatHistory[chatTarget] = [];
+  const time = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  chatHistory[chatTarget].push({ from, text, time });
+  renderChatHistory();
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  addChatMessage(WORKER_CODE, text);
+
+  if (chatTarget === 'SENTINEL_AI') {
+    showChatTyping();
+    try {
+      const result = await api('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worker_code: WORKER_CODE, message: text })
+      });
+      hideChatTyping();
+      addChatMessage('SENTINEL_AI', result.response);
+    } catch(e) {
+      hideChatTyping();
+      addChatMessage('SENTINEL_AI', 'Error de conexión. Intenta de nuevo.');
+    }
+  } else if (chatTarget === 'SUPERVISOR') {
+    setTimeout(() => {
+      const responses = ['Recibido. Reviso y te confirmo. 👍', 'OK, lo gestiono. Espera mi confirmación.', 'Enterado. Voy a verificar la zona.'];
+      addChatMessage('SUPERVISOR', responses[Math.floor(Math.random() * responses.length)]);
+    }, 1500 + Math.random() * 2500);
+  } else {
+    setTimeout(() => {
+      const responses = ['Enterado, gracias. 👍', 'OK, lo tengo en cuenta.', 'Recibido. Estoy en la zona.', 'Sí, confirmo. Cualquier cosa me dices.'];
+      addChatMessage(chatTarget, responses[Math.floor(Math.random() * responses.length)]);
+    }, 1200 + Math.random() * 2500);
+  }
+}
+
+function sendQuickChat(text) {
+  document.getElementById('chatInput').value = text;
+  sendChatMessage();
+}
+
+function showChatTyping() {
+  const container = document.getElementById('chatMessages');
+  const typing = document.createElement('div');
+  typing.id = 'chatTypingIndicator';
+  typing.className = 'chat-typing';
+  typing.innerHTML = '<div class="chat-typing-dot"></div><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div>';
+  container.appendChild(typing);
+  container.scrollTop = container.scrollHeight;
+}
+
+function hideChatTyping() {
+  const el = document.getElementById('chatTypingIndicator');
+  if (el) el.remove();
+}
+
+function toggleChatVoice() {
+  showToast('🎙️ Dictado por voz — habla ahora');
+  setTimeout(() => {
+    document.getElementById('chatInput').value = '¿Hay algún riesgo nuevo en mi zona?';
+    showToast('✓ Texto reconocido');
+  }, 2000);
+}
+
+// ── NOTIFICATIONS ──
+let lastIncidentCount = 0;
+let notifPollInterval = null;
+
+function startNotificationPoll() {
+  notifPollInterval = setInterval(async () => {
+    try {
+      const incidents = await api('/api/incidents-map');
+      if (lastIncidentCount > 0 && incidents.length > lastIncidentCount) {
+        const newest = incidents[0];
+        if (newest.lat && newest.lng) {
+          const dist = haversineDistance(currentPos.lat, currentPos.lng, newest.lat, newest.lng);
+          if (dist < 200) {
+            showNotification(`⚠️ Nueva incidencia a ${Math.round(dist)}m: ${(newest.description||newest.type).substring(0,50)}`);
+            // Refresh map if on zone screen
+            if (document.getElementById('screen-zone').classList.contains('active')) {
+              if (mapLayers.incidents) loadIncidentsOnMap();
+            }
+          }
+        }
+      }
+      lastIncidentCount = incidents.length;
+      // Update bell dot
+      const dot = document.querySelector('.header-btn .dot');
+      if (dot && incidents.length > 0) dot.style.display = 'block';
+    } catch(e) {}
+  }, 15000);
+}
+
+function showNotification(text) {
+  const banner = document.getElementById('notifBanner');
+  document.getElementById('notifText').textContent = text;
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 8000);
+}
+
+function dismissNotif() {
+  document.getElementById('notifBanner').classList.remove('show');
 }
 
 // ── Keyboard shortcuts ──
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
-  const screens = ['zone','task','alert','sup'];
+  const screens = ['zone','task','alert','chat'];
   const idx = parseInt(e.key) - 1;
   if (idx >= 0 && idx < 4) {
     const nav = document.querySelector(`[data-screen="${screens[idx]}"]`);
@@ -1456,6 +1871,10 @@ async function init() {
   await loadWorker();
   await loadZoneScreen();
   initGeolocation();
+  loadChatContacts();
+  // Initialize incident count for notifications
+  try { const inc = await api('/api/incidents-map'); lastIncidentCount = inc.length; } catch(e) {}
+  startNotificationPoll();
 }
 init();
 </script>
