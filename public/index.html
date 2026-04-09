@@ -52,16 +52,11 @@
     overflow-x: hidden;
   }
 
-  /* ── STATUS BAR ── */
-  .status-bar {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 22px 4px; font-size: 12px; font-weight: 700; color: var(--ink-faint);
-  }
-
   /* ── HEADER ── */
   .app-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 8px 20px 16px;
+    padding-top: calc(env(safe-area-inset-top, 14px) + 8px);
   }
   .brand-area { display: flex; align-items: center; gap: 12px; }
   .brand-mark {
@@ -80,7 +75,7 @@
     font-size: 16px; cursor: pointer; box-shadow: var(--shadow-sm);
     position: relative;
   }
-  .header-btn .dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); border: 2px solid var(--panel); }
+  .header-btn .dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); border: 2px solid var(--panel); display: none; }
 
   /* ── WORKER CARD ── */
   .worker-card {
@@ -122,7 +117,8 @@
     background: rgba(255,255,255,.92); backdrop-filter: blur(24px);
     border-top: 1px solid var(--line);
     display: flex; justify-content: space-around;
-    padding: 8px 0 24px; z-index: 100;
+    padding: 8px 0; padding-bottom: calc(env(safe-area-inset-bottom, 12px) + 8px);
+    z-index: 100;
     box-shadow: 0 -8px 30px rgba(15,31,49,.06);
   }
   .nav-item {
@@ -130,9 +126,11 @@
     font-size: 10px; color: var(--ink-faint); cursor: pointer;
     padding: 6px 14px; border-radius: 14px; transition: all .2s;
     font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-    position: relative;
+    position: relative; -webkit-tap-highlight-color: transparent;
+    min-width: 60px; min-height: 44px; justify-content: center;
   }
-  .nav-item .nav-icon { font-size: 20px; height: 28px; display: flex; align-items: center; }
+  .nav-item * { pointer-events: none; }
+  .nav-item .nav-icon { font-size: 20px; height: 28px; display: flex; align-items: center; pointer-events: none; }
   .nav-item.active { color: var(--blue); }
   .nav-item.active::after {
     content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
@@ -196,7 +194,11 @@
   .plant-map-container {
     position: relative; width: 100%; overflow: hidden;
     border-radius: var(--radius-xl); border: 1px solid var(--line);
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-lg); touch-action: none;
+  }
+  .map-inner-wrap {
+    position: relative; width: 100%; transform-origin: center center;
+    transition: transform .25s ease;
   }
   .plant-map-img {
     width: 100%; display: block; pointer-events: none;
@@ -918,16 +920,110 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 18px; cursor: pointer; flex-shrink: 0;
   }
+
+  /* ═══ Map zoom controls ═══ */
+  .map-zoom-controls {
+    position: absolute; bottom: 10px; right: 10px; z-index: 18;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .map-zoom-btn {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: rgba(255,255,255,.92); border: 1px solid var(--line);
+    backdrop-filter: blur(8px); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: var(--ink);
+    box-shadow: var(--shadow-sm); transition: all .15s;
+  }
+  .map-zoom-btn:active { background: var(--blue); color: white; }
+  .map-zoom-btn.center-btn { font-size: 14px; }
+
+  /* ═══ Notification Inbox ═══ */
+  .notif-inbox {
+    max-height: 55vh; overflow-y: auto;
+  }
+  .notif-inbox-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+    cursor: pointer; transition: background .15s;
+  }
+  .notif-inbox-item:last-child { border-bottom: none; }
+  .notif-inbox-item.unread { font-weight: 800; background: rgba(12,141,231,.03); margin: 0 -22px; padding: 14px 22px; border-radius: 12px; }
+  .notif-inbox-item.unread .ni-title { font-weight: 900; color: var(--ink); }
+  .ni-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+    background: var(--panel-2); border: 1px solid var(--line);
+  }
+  .ni-icon.hazard { background: rgba(219,74,67,.06); border-color: rgba(219,74,67,.15); }
+  .ni-icon.conflict { background: rgba(219,74,67,.08); border-color: rgba(219,74,67,.2); }
+  .ni-icon.workers { background: rgba(255,178,74,.08); border-color: rgba(255,178,74,.2); }
+  .ni-icon.report { background: rgba(12,141,231,.06); border-color: rgba(12,141,231,.15); }
+  .ni-content { flex: 1; min-width: 0; }
+  .ni-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+  .ni-detail { font-size: 11px; color: var(--ink-soft); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ni-time { font-size: 10px; color: var(--ink-faint); font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+  .ni-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 4px; }
+
+  /* ═══ Photo Gallery in Hazard Modal ═══ */
+  .hazard-photos {
+    margin-top: 14px;
+  }
+  .hazard-photos-title {
+    font-size: 11px; font-weight: 800; color: var(--ink-faint);
+    text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px;
+  }
+  .hazard-photo-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px;
+  }
+  .hazard-photo-item {
+    border-radius: var(--radius-sm); overflow: hidden;
+    border: 1px solid var(--line); background: var(--panel-2);
+  }
+  .hazard-photo-img {
+    width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block;
+    background: linear-gradient(135deg, var(--panel-2), rgba(12,141,231,.04));
+  }
+  .hazard-photo-meta {
+    display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+    font-size: 10px; font-weight: 700; color: var(--ink-soft);
+  }
+  .hazard-photo-avatar {
+    width: 18px; height: 18px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; font-weight: 900; color: white; flex-shrink: 0;
+  }
+  .hazard-photo-upload {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px; border-radius: var(--radius-md);
+    border: 2px dashed var(--line); cursor: pointer;
+    color: var(--ink-faint); font-size: 12px; font-weight: 800;
+    transition: all .15s; background: rgba(255,255,255,.5);
+  }
+  .hazard-photo-upload:active { border-color: var(--blue); color: var(--blue); background: rgba(12,141,231,.03); }
+  .hazard-photo-upload input { display: none; }
+
+  /* ═══ EPI Visual Cards ═══ */
+  .epi-grid-v2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .epi-card-v2 {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 0; text-align: center; font-size: 11px; font-weight: 700; color: var(--ink-soft);
+    overflow: hidden;
+  }
+  .epi-card-v2.critical { border-color: rgba(219,74,67,.25); }
+  .epi-card-v2.critical .epi-v2-label { color: var(--danger); font-weight: 800; }
+  .epi-v2-img {
+    width: 100%; aspect-ratio: 1; object-fit: contain;
+    background: var(--panel-2); display: flex; align-items: center; justify-content: center;
+    font-size: 36px; border-bottom: 1px solid var(--line);
+  }
+  .epi-v2-img img { width: 100%; height: 100%; object-fit: contain; }
+  .epi-v2-body { padding: 8px 6px; }
+  .epi-v2-label { font-size: 11px; font-weight: 700; line-height: 1.3; }
+  .epi-v2-tag { font-size: 9px; color: var(--danger); font-weight: 800; margin-top: 2px; }
 </style>
 </head>
 <body>
-
-<!-- STATUS BAR -->
-<div class="status-bar">
-  <span>9:41</span>
-  <span>SENTINEL · San Roque</span>
-  <span>5G · 87%</span>
-</div>
 
 <!-- HEADER -->
 <div class="app-header">
@@ -939,7 +1035,18 @@
   </div>
   <div class="header-actions">
     <div class="header-btn" onclick="showToast('Canal radio 7 · Supervisor: M. García')">📻</div>
-    <div class="header-btn">🔔<div class="dot"></div></div>
+    <div class="header-btn" id="bellBtn" onclick="openNotifInbox()">🔔<div class="dot" id="bellDot"></div></div>
+  </div>
+</div>
+
+<!-- NOTIFICATION INBOX MODAL -->
+<div id="notifInboxModal" style="display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.45); backdrop-filter:blur(4px);" onclick="if(event.target===this)this.style.display='none'">
+  <div style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:440px; background:var(--panel); border-radius:var(--radius-xl) var(--radius-xl) 0 0; padding:22px; padding-bottom:calc(env(safe-area-inset-bottom,12px)+22px); box-shadow:var(--shadow-xl); max-height:70vh; display:flex; flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <span style="font-size:16px;font-weight:900;color:var(--ink);">📥 Notificaciones</span>
+      <span style="font-size:11px;font-weight:800;color:var(--blue);cursor:pointer;" onclick="markAllNotifRead()">Marcar todo leído</span>
+    </div>
+    <div class="notif-inbox" id="notifInboxList"></div>
   </div>
 </div>
 
@@ -973,17 +1080,13 @@
   <div class="map-section">
     <div class="section-label">📡 Mapa de planta — <span id="radarZone">cargando</span></div>
     <div class="plant-map-container" id="plantMap">
+      <div class="map-inner-wrap" id="mapInnerWrap">
       <img src="/map/planta.png" class="plant-map-img" alt="Complejo San Roque" draggable="false">
       <svg class="map-svg" id="mapSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
         <polyline id="escapePath" fill="none" stroke="#0c8de7" stroke-width="0.7" stroke-dasharray="1.8,1.2" stroke-linecap="round" opacity="0">
           <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="2s" repeatCount="indefinite"/>
         </polyline>
       </svg>
-      <div class="map-layers">
-        <div class="map-layer-btn active" onclick="toggleMapLayer('workers',this)">👷 Personas</div>
-        <div class="map-layer-btn active" onclick="toggleMapLayer('hazards',this)">⚠ Riesgos</div>
-        <div class="map-layer-btn" onclick="toggleMapLayer('incidents',this)">📋 Incidencias</div>
-      </div>
       <div id="radarBlips"></div>
       <div id="workerDots"></div>
       <div id="incidentDots" style="display:none;"></div>
@@ -998,6 +1101,17 @@
       <div class="escape-dist-badge" id="escapeDistBadge"></div>
       <div class="loto-strip" id="lotoStrip" style="display:none;"></div>
       <div class="gps-badge" id="gpsBadge"><div class="gps-live"></div> <span id="gpsText">GPS</span></div>
+      </div><!-- /map-inner-wrap -->
+      <div class="map-layers">
+        <div class="map-layer-btn active" onclick="toggleMapLayer('workers',this)">👷 Personas</div>
+        <div class="map-layer-btn active" onclick="toggleMapLayer('hazards',this)">⚠ Riesgos</div>
+        <div class="map-layer-btn" onclick="toggleMapLayer('incidents',this)">📋 Incidencias</div>
+      </div>
+      <div class="map-zoom-controls">
+        <div class="map-zoom-btn" onclick="mapZoomIn()">＋</div>
+        <div class="map-zoom-btn" onclick="mapZoomOut()">−</div>
+        <div class="map-zoom-btn center-btn" onclick="mapCenterUser()">◎</div>
+      </div>
     </div>
   </div>
 
@@ -1083,7 +1197,7 @@
       <div class="chat-quick-btn" onclick="sendQuickChat('¿Qué riesgos hay en mi zona?')">Riesgos zona</div>
       <div class="chat-quick-btn" onclick="sendQuickChat('¿Cuál es mi ruta de evacuación?')">Evacuación</div>
       <div class="chat-quick-btn" onclick="sendQuickChat('¿Qué EPI necesito?')">EPI</div>
-      <div class="chat-quick-btn" onclick="sendQuickChat('¿Cómo está el tiempo?')">Tiempo</div>
+      <div class="chat-quick-btn" onclick="sendQuickChat('Llévame al taller mecánico')">🧭 Navegar</div>
     </div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-input-bar">
@@ -1136,6 +1250,60 @@ let escapeWaypoints = [];
 let musterPoint = null;
 let simMode = true;
 let simInterval = null;
+let mapZoomLevel = 1;
+const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
+let mapPanX = 0, mapPanY = 0;
+let mapPinchStart = 0;
+
+// ── Notification state ──
+let notifReadIds = new Set();
+let notifCache = [];
+
+// ── Hazard photo store (demo, client-side) ──
+const hazardPhotos = {};
+
+function mapZoomIn() {
+  mapZoomLevel = Math.min(MAP_ZOOM_MAX, mapZoomLevel + 0.5);
+  applyMapZoom();
+}
+function mapZoomOut() {
+  mapZoomLevel = Math.max(MAP_ZOOM_MIN, mapZoomLevel - 0.5);
+  if (mapZoomLevel === 1) { mapPanX = 0; mapPanY = 0; }
+  applyMapZoom();
+}
+function mapCenterUser() {
+  const pos = gpsToPercent(currentPos.lat, currentPos.lng);
+  mapZoomLevel = 2.5;
+  mapPanX = -(pos.x - 50) * (mapZoomLevel - 1) / mapZoomLevel;
+  mapPanY = -(pos.y - 50) * (mapZoomLevel - 1) / mapZoomLevel;
+  applyMapZoom();
+}
+function applyMapZoom() {
+  const wrap = document.getElementById('mapInnerWrap');
+  if (!wrap) return;
+  wrap.style.transform = `scale(${mapZoomLevel}) translate(${mapPanX}%, ${mapPanY}%)`;
+}
+// Pinch-to-zoom
+document.addEventListener('DOMContentLoaded', () => {
+  const mc = document.getElementById('plantMap');
+  if (!mc) return;
+  let lastDist = 0;
+  mc.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    }
+  }, {passive: true});
+  mc.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      const delta = (dist - lastDist) * 0.008;
+      mapZoomLevel = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, mapZoomLevel + delta));
+      if (mapZoomLevel === 1) { mapPanX = 0; mapPanY = 0; }
+      applyMapZoom();
+      lastDist = dist;
+    }
+  }, {passive: true});
+});
 
 function gpsToPercent(lat, lng) {
   const x = (lng - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west) * 100;
@@ -1356,6 +1524,18 @@ async function loadZoneScreen() {
 function openHazardModal(h) {
   const icons = { hot_work: '🔥', crane: '🏗️', confined_space: '⛔', electrical: '⚡' };
   document.getElementById('modalTitle').textContent = (icons[h.type]||'⚠') + ' ' + h.title;
+
+  const photos = hazardPhotos[h.id] || [];
+  let photosHtml = `<div class="hazard-photos"><div class="hazard-photos-title">📷 Evidencias fotográficas (${photos.length})</div>`;
+  if (photos.length > 0) {
+    photosHtml += '<div class="hazard-photo-grid">';
+    photos.forEach(p => {
+      photosHtml += `<div class="hazard-photo-item"><img class="hazard-photo-img" src="${p.data}" alt="Evidencia"><div class="hazard-photo-meta"><div class="hazard-photo-avatar" style="background:${AVATAR_COLORS[p.code]||'var(--gradient-brand)'}">${p.code}</div>${p.name}</div></div>`;
+    });
+    photosHtml += '</div>';
+  }
+  photosHtml += `<label class="hazard-photo-upload" onclick="event.stopPropagation()">📷 Añadir foto<input type="file" accept="image/*" multiple onchange="handleHazardPhotos(event,${h.id})"></label></div>`;
+
   document.getElementById('modalBody').innerHTML = `
     <p><strong>Empresa:</strong> ${h.company}</p>
     <p><strong>Horario:</strong> ${h.start_time} – ${h.end_time}</p>
@@ -1364,8 +1544,29 @@ function openHazardModal(h) {
     <p style="margin-top:12px; padding:14px; border-radius:14px; background:rgba(219,74,67,.04); border:1px solid rgba(219,74,67,.1); font-weight:700; color:#8b362d;">
       Tu acción: ${h.action_required}
     </p>
+    ${photosHtml}
   `;
   document.getElementById('modal').classList.add('active');
+}
+
+function handleHazardPhotos(event, hazardId) {
+  const files = event.target.files;
+  if (!files.length) return;
+  if (!hazardPhotos[hazardId]) hazardPhotos[hazardId] = [];
+  Array.from(files).forEach(file => {
+    if (file.size > 5 * 1024 * 1024) { showToast('Archivo demasiado grande (máx 5MB)'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      hazardPhotos[hazardId].push({ data: e.target.result, code: WORKER_CODE, name: 'J. López', time: new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) });
+      showToast('📷 Foto añadida');
+      // Refresh modal
+      api('/api/hazards?zone_id=1&active=true').then(hazards => {
+        const h = hazards.find(hz => hz.id === hazardId);
+        if (h) openHazardModal(h);
+      });
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function showSemaphoreDetail() {
@@ -1455,11 +1656,27 @@ async function loadTaskScreen() {
 
     let epiHtml = '';
     if (epi.length > 0) {
-      const epiIcons = {'Casco':'🪖','Guantes':'🧤','Guantes anticorte':'🧤','Botas S3':'👢','Arnés':'🔗','Arnés + línea vida':'🔗','Protección auditiva':'👂','Respirador ABE1':'🫁','Gafas':'👓'};
-      epiHtml = '<div class="tp-section"><div class="tp-section-title">🦺 EPI obligatorio</div><div class="epi-grid">';
+      const epiImages = {
+        'Casco':'https://cdn-icons-png.flaticon.com/128/2345/2345547.png',
+        'Guantes':'https://cdn-icons-png.flaticon.com/128/1066/1066711.png',
+        'Guantes anticorte':'https://cdn-icons-png.flaticon.com/128/1066/1066711.png',
+        'Botas S3':'https://cdn-icons-png.flaticon.com/128/2589/2589903.png',
+        'Arnés':'https://cdn-icons-png.flaticon.com/128/3209/3209265.png',
+        'Arnés + línea vida':'https://cdn-icons-png.flaticon.com/128/3209/3209265.png',
+        'Protección auditiva':'https://cdn-icons-png.flaticon.com/128/5038/5038856.png',
+        'Respirador ABE1':'https://cdn-icons-png.flaticon.com/128/2913/2913250.png',
+        'Gafas':'https://cdn-icons-png.flaticon.com/128/2750/2750221.png'
+      };
+      const epiEmoji = {'Casco':'🪖','Guantes':'🧤','Guantes anticorte':'🧤','Botas S3':'👢','Arnés':'🔗','Arnés + línea vida':'🔗','Protección auditiva':'👂','Respirador ABE1':'🫁','Gafas':'👓'};
+      epiHtml = '<div class="tp-section"><div class="tp-section-title">🦺 EPI obligatorio</div><div class="epi-grid-v2">';
       epi.forEach(e => {
         const isCritical = e.includes('Respirador');
-        epiHtml += `<div class="epi-item ${isCritical?'critical':''}"><div class="epi-icon">${epiIcons[e]||'🦺'}</div><div class="epi-label">${e}</div>${isCritical?'<small style="color:var(--danger);font-weight:800;">08–10h</small>':''}</div>`;
+        const imgUrl = epiImages[e];
+        const emoji = epiEmoji[e] || '🦺';
+        epiHtml += `<div class="epi-card-v2 ${isCritical?'critical':''}">
+          <div class="epi-v2-img">${imgUrl ? `<img src="${imgUrl}" alt="${e}" onerror="this.parentElement.textContent='${emoji}'">` : emoji}</div>
+          <div class="epi-v2-body"><div class="epi-v2-label">${e}</div>${isCritical?'<div class="epi-v2-tag">⚠ 08–10h</div>':''}</div>
+        </div>`;
       });
       epiHtml += '</div></div>';
     }
@@ -1770,6 +1987,35 @@ async function sendChatMessage() {
       });
       hideChatTyping();
       addChatMessage('SENTINEL_AI', result.response);
+      // Pathfinding: if AI returns navigation target, show route on map
+      if (result.navigate) {
+        const nav = result.navigate;
+        musterPoint = { lat: nav.lat, lng: nav.lng, name: nav.name };
+        escapeWaypoints = [];
+        // Generate simple intermediate waypoints
+        const steps = 6;
+        for (let i = 1; i < steps; i++) {
+          const t = i / steps;
+          const wLat = currentPos.lat + t * (nav.lat - currentPos.lat) + (Math.random() - 0.5) * 0.0004;
+          const wLng = currentPos.lng + t * (nav.lng - currentPos.lng) + (Math.random() - 0.5) * 0.0004;
+          escapeWaypoints.push([wLat, wLng]);
+        }
+        escapeRouteActive = true;
+        const mPos = gpsToPercent(musterPoint.lat, musterPoint.lng);
+        const mm = document.getElementById('musterMarker');
+        mm.style.left = mPos.x + '%';
+        mm.style.top = mPos.y + '%';
+        mm.style.display = 'flex';
+        document.getElementById('musterLabel').textContent = musterPoint.name;
+        updateEscapePath();
+        // Switch to map view
+        setTimeout(() => {
+          const navEl = document.querySelector('[data-screen="zone"]');
+          switchScreen('zone', navEl);
+          document.getElementById('plantMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (simMode) setTimeout(() => simulateWalk(), 1500);
+        }, 800);
+      }
     } catch(e) {
       hideChatTyping();
       addChatMessage('SENTINEL_AI', 'Error de conexión. Intenta de nuevo.');
@@ -1837,9 +2083,12 @@ function startNotificationPoll() {
         }
       }
       lastIncidentCount = incidents.length;
-      // Update bell dot
-      const dot = document.querySelector('.header-btn .dot');
-      if (dot && incidents.length > 0) dot.style.display = 'block';
+      // Update bell dot — fetch notification count
+      try {
+        const notifs = await api('/api/notifications');
+        notifCache = notifs;
+        updateBellDot();
+      } catch(e2) {}
     } catch(e) {}
   }, 15000);
 }
@@ -1853,6 +2102,68 @@ function showNotification(text) {
 
 function dismissNotif() {
   document.getElementById('notifBanner').classList.remove('show');
+}
+
+// ── Notification Inbox ──
+async function openNotifInbox() {
+  const modal = document.getElementById('notifInboxModal');
+  modal.style.display = 'block';
+  const list = document.getElementById('notifInboxList');
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-faint);">Cargando...</div>';
+  try {
+    const notifs = await api('/api/notifications');
+    notifCache = notifs;
+    renderNotifInbox();
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-faint);">Error cargando notificaciones</div>';
+  }
+}
+
+function renderNotifInbox() {
+  const list = document.getElementById('notifInboxList');
+  if (notifCache.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-faint);">Sin notificaciones 🎉</div>';
+    return;
+  }
+  list.innerHTML = '';
+  const iconClasses = {'⚠️':'hazard','🔴':'conflict','👷':'workers','📋':'report','🦺':'hazard','🏁':'workers'};
+  notifCache.forEach((n, i) => {
+    const isRead = notifReadIds.has(n.id || i);
+    const item = document.createElement('div');
+    item.className = 'notif-inbox-item' + (isRead ? '' : ' unread');
+    item.onclick = () => { markNotifRead(n.id || i); };
+    const timeStr = n.time ? new Date(n.time).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : 'Ahora';
+    item.innerHTML = `
+      ${isRead ? '' : '<div class="ni-unread-dot"></div>'}
+      <div class="ni-icon ${iconClasses[n.icon]||''}">${n.icon}</div>
+      <div class="ni-content">
+        <div class="ni-title">${n.title}</div>
+        <div class="ni-detail">${n.detail || ''}</div>
+      </div>
+      <div class="ni-time">${timeStr}</div>
+    `;
+    list.appendChild(item);
+  });
+  updateBellDot();
+}
+
+function markNotifRead(id) {
+  notifReadIds.add(id);
+  renderNotifInbox();
+  updateBellDot();
+}
+
+function markAllNotifRead() {
+  notifCache.forEach((n, i) => notifReadIds.add(n.id || i));
+  renderNotifInbox();
+  updateBellDot();
+}
+
+function updateBellDot() {
+  const dot = document.getElementById('bellDot');
+  if (!dot) return;
+  const unreadCount = notifCache.filter((n, i) => !notifReadIds.has(n.id || i)).length;
+  dot.style.display = unreadCount > 0 ? 'block' : 'none';
 }
 
 // ── Keyboard shortcuts ──
@@ -1874,6 +2185,8 @@ async function init() {
   loadChatContacts();
   // Initialize incident count for notifications
   try { const inc = await api('/api/incidents-map'); lastIncidentCount = inc.length; } catch(e) {}
+  // Load initial notifications
+  try { notifCache = await api('/api/notifications'); updateBellDot(); } catch(e) {}
   startNotificationPoll();
 }
 init();

@@ -568,12 +568,61 @@ app.post('/api/chat', (req, res) => {
     response = `¡Buenos días, ${workerName}! 👋 Soy SENTINEL, tu copiloto de seguridad para la parada técnica.\n\n¿En qué puedo ayudarte?\n• Riesgos en tu zona\n• ¿Puedo empezar mi tarea?\n• Ruta de evacuación\n• Contactar supervisor\n• EPI requerido`;
   } else if (msg.includes('gracias') || msg.includes('thanks')) {
     response = `De nada, ${workerName}. Estoy aquí 24/7 durante la parada. ¡Trabaja seguro! 💪`;
+  } else if (msg.includes('llévame') || msg.includes('ir a') || msg.includes('cómo llego') || msg.includes('navegar') || msg.includes('camino a') || msg.includes('guíame') || msg.includes('llegar a')) {
+    // Pathfinding — detect target zone
+    const allZones = db.prepare('SELECT * FROM zones').all();
+    let targetZone = null;
+    for (const z of allZones) {
+      const nameWords = z.name.toLowerCase().split(/\s+/);
+      const codeMatch = msg.includes(z.code.toLowerCase());
+      const fullMatch = msg.includes(z.name.toLowerCase());
+      const wordMatch = nameWords.some(w => w.length > 2 && msg.includes(w));
+      if (codeMatch || fullMatch || wordMatch) {
+        targetZone = z; break;
+      }
+    }
+    // Also check for worker names
+    if (!targetZone) {
+      const allWorkers = db.prepare('SELECT w.code as wcode, w.name as wname, w.lat as wlat, w.lng as wlng, w.current_zone FROM workers w WHERE w.code != ?').all(worker_code);
+      for (const w of allWorkers) {
+        if (msg.includes(w.wname.toLowerCase().split(' ')[0].toLowerCase()) || msg.includes(w.wcode.toLowerCase())) {
+          targetZone = { code: w.current_zone, name: w.wname, lat: w.wlat, lng: w.wlng }; break;
+        }
+      }
+    }
+    if (targetZone && targetZone.lat && targetZone.lng) {
+      const dist = Math.round(6371000 * 2 * Math.atan2(Math.sqrt(Math.sin(((targetZone.lat - (worker.lat||36.1963)) * Math.PI/180)/2)**2), Math.sqrt(1 - Math.sin(((targetZone.lat - (worker.lat||36.1963)) * Math.PI/180)/2)**2)));
+      response = `${workerName}, te guío hasta ${targetZone.name} (${targetZone.code}).\n\n📍 Distancia: ~${dist}m\n🗺️ He activado la ruta en tu mapa. Sigue la línea azul.\n\n⚠️ Recuerda verificar los riesgos en el camino.`;
+      // Return navigate data
+      db.prepare('INSERT INTO chat_messages (from_code, to_code, message, is_ai) VALUES (?, ?, ?, ?)').run(worker_code, 'SENTINEL_AI', message, 0);
+      db.prepare('INSERT INTO chat_messages (from_code, to_code, message, is_ai) VALUES (?, ?, ?, ?)').run('SENTINEL_AI', worker_code, response, 1);
+      return res.json({ response, timestamp: new Date().toISOString(), navigate: { lat: targetZone.lat, lng: targetZone.lng, name: targetZone.name || targetZone.code } });
+    } else {
+      response = `${workerName}, no he podido identificar el destino. Prueba diciendo el nombre o código de la zona. Zonas disponibles:\n\n${allZones.map(z => '📍 ' + z.code + ' — ' + z.name).join('\n')}`;
+    }
   } else {
     response = `${workerName}, entendido. Estás en ${zone ? zone.name : 'planta'} con ${hazards.length} riesgo(s) activo(s).\n\n¿Puedo ayudarte con algo específico?\n• Riesgos en tu zona\n• ¿Puedo empezar?\n• Ruta de evacuación\n• Contactar supervisor`;
   }
   db.prepare('INSERT INTO chat_messages (from_code, to_code, message, is_ai) VALUES (?, ?, ?, ?)').run(worker_code, 'SENTINEL_AI', message, 0);
   db.prepare('INSERT INTO chat_messages (from_code, to_code, message, is_ai) VALUES (?, ?, ?, ?)').run('SENTINEL_AI', worker_code, response, 1);
   res.json({ response, timestamp: new Date().toISOString() });
+});
+
+// Notifications aggregation
+app.get('/api/notifications', (req, res) => {
+  const notifs = [];
+  const hazards = db.prepare("SELECT * FROM hazards WHERE active = 1 ORDER BY severity DESC").all();
+  hazards.forEach(h => notifs.push({ id: 'h-' + h.id, type: 'hazard', icon: '⚠️', title: h.title, detail: `${h.distance_m}m ${h.direction} · Severidad: ${h.severity}`, time: h.start_time, severity: h.severity }));
+  const conflicts = db.prepare("SELECT s.*, z.name as zone_name FROM simops_conflicts s LEFT JOIN zones z ON s.zone_id = z.id WHERE s.status IN ('active','blocked') ORDER BY s.severity DESC").all();
+  conflicts.forEach(c => notifs.push({ id: 'c-' + c.id, type: 'conflict', icon: '🔴', title: 'SIMOPS: ' + c.title, detail: c.ai_suggestion, time: c.created_at, severity: c.severity }));
+  const critWorkers = db.prepare("SELECT w.name, z.name as zone_name, z.risk_level FROM workers w JOIN zones z ON w.current_zone = z.code WHERE z.risk_level IN ('critical','warning')").all();
+  if (critWorkers.length > 0) notifs.push({ id: 'wc-1', type: 'workers', icon: '👷', title: `${critWorkers.length} trabajadores en zonas de riesgo`, detail: critWorkers.map(w => w.name.split(' ')[0] + ' → ' + w.zone_name).join(', '), time: new Date().toISOString(), severity: 'warning' });
+  const reports = db.prepare("SELECT r.*, w.name as worker_name FROM reports r LEFT JOIN workers w ON r.worker_id = w.id ORDER BY r.created_at DESC LIMIT 5").all();
+  reports.forEach(r => notifs.push({ id: 'r-' + r.id, type: 'report', icon: '📋', title: 'Reporte: ' + (r.category || r.type), detail: r.description || r.ai_summary || '', time: r.created_at, severity: 'info' }));
+  // EPI/briefing reminders
+  notifs.push({ id: 'epi-1', type: 'epi', icon: '🦺', title: 'Verificación EPI completada', detail: 'Todos los equipos requeridos verificados para turno mañana', time: '07:00', severity: 'info' });
+  notifs.push({ id: 'muster-1', type: 'muster', icon: '🏁', title: 'Punto de reunión actualizado', detail: 'Punto reunión 3 — Zona despejada y verificada', time: '06:45', severity: 'info' });
+  res.json(notifs);
 });
 
 // Serve main app
