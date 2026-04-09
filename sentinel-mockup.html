@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENTINEL — Parada Inteligente</title>
+<style>
+  :root {
+    --bg: #0f1923;
+    --surface: #1a2836;
+    --surface2: #223344;
+    --accent: #00b4d8;
+    --accent2: #0077b6;
+    --danger: #e63946;
+    --warning: #f4a261;
+    --success: #2a9d8f;
+    --text: #e8edf2;
+    --text-muted: #8899aa;
+    --border: #2a3a4a;
+    --card-shadow: 0 2px 12px rgba(0,0,0,.35);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 100%);
+    padding: 0 28px; height: 60px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar .logo { display: flex; align-items: center; gap: 12px; }
+  .topbar .logo .icon { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #fff; }
+  .topbar .logo span { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+  .topbar .meta { display: flex; align-items: center; gap: 20px; font-size: 13px; color: var(--text-muted); }
+  .topbar .meta .live { display: flex; align-items: center; gap: 6px; }
+  .topbar .meta .live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 0; background: var(--surface);
+    border-bottom: 2px solid var(--border); padding: 0 28px;
+    position: sticky; top: 60px; z-index: 99;
+  }
+  .tab {
+    padding: 14px 24px; font-size: 14px; font-weight: 600;
+    color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent;
+    transition: all .2s; display: flex; align-items: center; gap: 8px;
+    user-select: none;
+  }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,.03); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab .badge { background: var(--danger); color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
+
+  /* ── VIEWS ── */
+  .view { display: none; padding: 24px 28px; animation: fadeIn .3s; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
+
+  /* ── VIEW A: MAPA DE PARADA ── */
+  .view-a-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .view-a-header h2 { font-size: 22px; font-weight: 700; }
+  .view-a-header .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+  .view-a-header .controls select, .view-a-header .controls button {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer;
+  }
+  .view-a-header .controls button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 14px; margin-bottom: 24px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .kpi .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .kpi .value { font-size: 28px; font-weight: 800; }
+  .kpi .value.danger { color: var(--danger); }
+  .kpi .value.warning { color: var(--warning); }
+  .kpi .value.ok { color: var(--success); }
+
+  /* Gantt-like board */
+  .board-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  .board { min-width: 900px; }
+  .board-header { display: grid; grid-template-columns: 180px repeat(6, 1fr); background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .board-header .cell { padding: 10px 14px; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: .5px; text-align: center; }
+  .board-header .cell:first-child { text-align: left; }
+  .board-row { display: grid; grid-template-columns: 180px repeat(6, 1fr); border-bottom: 1px solid var(--border); transition: background .15s; }
+  .board-row:hover { background: rgba(255,255,255,.02); }
+  .board-row .zone { padding: 12px 14px; font-weight: 600; font-size: 13px; display: flex; align-items: flex-start; flex-direction: column; gap: 2px; border-right: 1px solid var(--border); }
+  .board-row .zone small { font-weight: 400; color: var(--text-muted); font-size: 11px; }
+  .board-row .slot { padding: 8px 6px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid rgba(255,255,255,.03); min-height: 70px; }
+
+  .task-card {
+    padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    cursor: pointer; position: relative; transition: transform .15s, box-shadow .15s;
+    line-height: 1.35;
+  }
+  .task-card:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+  .task-card .risk-badge { position: absolute; top: -4px; right: -4px; width: 16px; height: 16px; border-radius: 50%; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; }
+  .task-card.mech { background: #1d4e89; border-left: 3px solid #3a86ff; }
+  .task-card.elec { background: #5a189a; border-left: 3px solid #9d4edd; }
+  .task-card.hot { background: #6a040f; border-left: 3px solid #e63946; }
+  .task-card.conf { background: #774936; border-left: 3px solid #e76f51; }
+  .task-card.insp { background: #1b4332; border-left: 3px solid #2a9d8f; }
+  .task-card.clean { background: #3a506b; border-left: 3px solid #6fffe9; }
+
+  .conflict-row { background: rgba(230,57,70,.08) !important; }
+  .conflict-row .slot.conflict-slot { background: rgba(230,57,70,.12); border: 1px dashed var(--danger); border-radius: 6px; position: relative; }
+  .conflict-indicator { font-size: 10px; color: var(--danger); font-weight: 700; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .conflict-indicator::before { content: '⚠'; font-size: 13px; }
+
+  .legend { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .legend-color { width: 14px; height: 14px; border-radius: 4px; }
+
+  /* Reprogramming suggestion panel */
+  .suggestion-panel {
+    margin-top: 20px; background: linear-gradient(135deg, rgba(230,57,70,.08), rgba(0,180,216,.06));
+    border: 1px solid var(--danger); border-radius: 12px; padding: 20px 24px;
+  }
+  .suggestion-panel h3 { color: var(--danger); font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .suggestion-panel h3::before { content: '🤖'; }
+  .suggestion-item { background: var(--surface); border-radius: 8px; padding: 14px 18px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .suggestion-item .desc { font-size: 13px; flex: 1; min-width: 250px; }
+  .suggestion-item .desc strong { color: var(--warning); }
+  .suggestion-item .impact { font-size: 12px; color: var(--success); font-weight: 600; white-space: nowrap; }
+  .suggestion-item .actions { display: flex; gap: 8px; }
+  .suggestion-item .actions button { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .btn-accept { background: var(--success); color: #fff; }
+  .btn-reject { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border) !important; }
+  .btn-accept:hover { filter: brightness(1.15); }
+
+  /* ── VIEW B: MI TURNO ── */
+  .worker-header { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; flex-wrap: wrap; }
+  .worker-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; }
+  .worker-info h2 { font-size: 20px; font-weight: 700; }
+  .worker-info p { font-size: 13px; color: var(--text-muted); }
+  .worker-status { margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; }
+  .worker-status .chip { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .chip-ok { background: rgba(42,157,143,.15); color: var(--success); border: 1px solid var(--success); }
+  .chip-warn { background: rgba(244,162,97,.12); color: var(--warning); border: 1px solid var(--warning); }
+
+  .shift-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .shift-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .shift-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+  .shift-card.c-blue::before { background: #3a86ff; }
+  .shift-card.c-red::before { background: var(--danger); }
+  .shift-card.c-green::before { background: var(--success); }
+  .shift-card .time { font-size: 13px; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+  .shift-card .title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .shift-card .location { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+  .shift-card .epi-list { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .epi-tag { background: var(--surface2); border: 1px solid var(--border); padding: 3px 10px; border-radius: 12px; font-size: 11px; }
+  .shift-card .risk-note { font-size: 12px; color: var(--warning); background: rgba(244,162,97,.08); padding: 8px 12px; border-radius: 6px; line-height: 1.4; }
+  .shift-card .status-check { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--success); }
+
+  .nearby-alert {
+    background: linear-gradient(135deg, rgba(230,57,70,.1), rgba(244,162,97,.06));
+    border: 1px solid var(--danger); border-radius: 12px; padding: 18px 22px; margin-bottom: 20px;
+  }
+  .nearby-alert h3 { color: var(--danger); font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .nearby-alert h3::before { content: '🔥'; }
+  .nearby-item { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+  .nearby-item:last-child { border-bottom: none; }
+  .nearby-dist { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; font-size: 14px; font-weight: 800; flex-shrink: 0; }
+  .nearby-dist.close { background: rgba(230,57,70,.2); color: var(--danger); }
+  .nearby-dist.medium { background: rgba(244,162,97,.15); color: var(--warning); }
+  .nearby-dist small { font-size: 9px; font-weight: 400; }
+  .nearby-item .details { font-size: 13px; line-height: 1.45; }
+  .nearby-item .details strong { color: var(--text); }
+  .nearby-item .details .sub { color: var(--text-muted); font-size: 11px; }
+
+  .briefing-card {
+    background: var(--surface); border: 1px solid var(--accent); border-radius: 12px;
+    padding: 20px 24px; margin-top: 16px;
+  }
+  .briefing-card h3 { font-size: 15px; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .briefing-card h3::before { content: '🤖'; }
+  .briefing-text { font-size: 13px; line-height: 1.6; color: var(--text-muted); margin-bottom: 14px; }
+  .briefing-quiz .question { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .briefing-quiz .options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .briefing-quiz label { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 14px; background: var(--surface2); border-radius: 6px; cursor: pointer; border: 1px solid var(--border); transition: all .15s; }
+  .briefing-quiz label:hover { border-color: var(--accent); background: rgba(0,180,216,.05); }
+  .briefing-quiz input[type="radio"] { accent-color: var(--accent); }
+  .briefing-btn { background: var(--accent); color: #fff; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; }
+
+  /* ── VIEW C: LECCIONES APRENDIDAS ── */
+  .lecciones-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .lecciones-header h2 { font-size: 22px; }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-bar select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 6px; font-size: 13px; }
+
+  .timeline-container { position: relative; padding-left: 32px; }
+  .timeline-line { position: absolute; left: 14px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-event { position: relative; margin-bottom: 18px; }
+  .timeline-event .dot { position: absolute; left: -26px; top: 14px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); }
+  .dot-incident { background: var(--danger); box-shadow: 0 0 8px rgba(230,57,70,.5); }
+  .dot-nearmiss { background: var(--warning); }
+  .dot-improvement { background: var(--success); }
+  .timeline-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; transition: border-color .15s;
+  }
+  .timeline-card:hover { border-color: var(--accent); }
+  .timeline-card .meta-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .timeline-card .date { font-size: 12px; color: var(--text-muted); }
+  .timeline-card .type-badge { font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 10px; text-transform: uppercase; letter-spacing: .5px; }
+  .type-incident { background: rgba(230,57,70,.15); color: var(--danger); }
+  .type-nearmiss { background: rgba(244,162,97,.15); color: var(--warning); }
+  .type-improvement { background: rgba(42,157,143,.15); color: var(--success); }
+  .timeline-card .zone-tag { font-size: 11px; background: var(--surface2); padding: 2px 8px; border-radius: 4px; color: var(--text-muted); }
+  .timeline-card .event-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .timeline-card .event-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .timeline-card .pattern-match { margin-top: 10px; background: rgba(0,180,216,.06); border: 1px solid rgba(0,180,216,.2); border-radius: 6px; padding: 10px 14px; font-size: 12px; color: var(--accent); }
+  .timeline-card .pattern-match::before { content: '🔗 '; }
+
+  .pattern-summary {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 22px 26px; margin-bottom: 24px;
+  }
+  .pattern-summary h3 { font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .pattern-meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; }
+  .meter { text-align: center; }
+  .meter-bar { width: 100%; height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+  .meter-fill { height: 100%; border-radius: 4px; transition: width .8s ease; }
+  .meter-label { font-size: 12px; color: var(--text-muted); }
+  .meter-value { font-size: 20px; font-weight: 800; }
+
+  .drag-simulator {
+    background: linear-gradient(135deg, rgba(0,180,216,.06), rgba(42,157,143,.04));
+    border: 1px solid var(--accent); border-radius: 12px; padding: 20px 24px; margin-top: 20px;
+  }
+  .drag-simulator h3 { font-size: 15px; color: var(--accent); margin-bottom: 6px; }
+  .drag-simulator p { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .sim-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .sim-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; font-size: 13px; min-width: 150px; }
+  .sim-arrow { font-size: 20px; color: var(--accent); }
+  .sim-result { display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); margin-top: 8px; }
+  .sim-result .before { color: var(--danger); font-weight: 800; font-size: 22px; }
+  .sim-result .after { color: var(--success); font-weight: 800; font-size: 22px; }
+  .sim-result .arrow-change { font-size: 20px; color: var(--success); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .topbar { padding: 0 14px; }
+    .tabs { padding: 0 10px; overflow-x: auto; }
+    .tab { padding: 12px 14px; font-size: 13px; white-space: nowrap; }
+    .view { padding: 16px 14px; }
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 28px 32px; max-width: 520px; width: 90%; max-height: 80vh; overflow-y: auto;
+  }
+  .modal h3 { margin-bottom: 14px; font-size: 17px; }
+  .modal p { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px; }
+  .modal .close-btn { background: var(--accent); color: #fff; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px; }
+  .modal .tag-list { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--success); color: #fff;
+    padding: 14px 24px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4); z-index: 300;
+    transform: translateY(80px); opacity: 0; transition: all .35s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ═══ TOP BAR ═══ -->
+<div class="topbar">
+  <div class="logo">
+    <div class="icon">S</div>
+    <span>SENTINEL</span>
+  </div>
+  <div class="meta">
+    <div class="live">En vivo — Parada San Roque 2026</div>
+    <span>Día 12 de 29</span>
+    <span>2.714 personas en planta</span>
+  </div>
+</div>
+
+<!-- ═══ TABS ═══ -->
+<div class="tabs">
+  <div class="tab active" data-view="a">
+    <span>📋</span> Mapa de Parada
+    <span class="badge">3</span>
+  </div>
+  <div class="tab" data-view="b">
+    <span>👷</span> Mi Turno
+  </div>
+  <div class="tab" data-view="c">
+    <span>📊</span> Lecciones Aprendidas
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- VIEW A: MAPA DE PARADA                 -->
+<!-- ═══════════════════════════════════════ -->
+<div class="view active" id="view-a">
+  <div class="view-a-header">
+    <h2>Tablero de Parada — Turno de Mañana</h2>
+    <div class="controls">
+      <select id="turno-select">
+        <option>Turno Mañana (06:00–14:00)</option>
+        <option>Turno Tarde (14:00–22:00)</option>
+        <option>Turno Noche (22:00–06:00)</option>
+      </select>
+      <select>
+        <option>Todas las zonas</option>
+        <option>Unidad H-100</option>
+        <option>Rack Eléctrico Norte</option>
+        <option>Tanque TK-123</option>
+      </select>
+      <button class="primary" onclick="showToast('Optimizando planificación con IA...')">🤖 Optimizar riesgos</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="label">Tareas activas hoy</div>
+      <div class="value">47</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Índice de coactividad</div>
+      <div class="value danger">ALTO</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Conflictos detectados</div>
+      <div class="value danger">3</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Personas en zona riesgo</div>
+      <div class="value warning">38</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Permisos vencidos</div>
+      <div class="value ok">0</div>
+    </div>
+  </div>
+
+  <!-- Board -->
+  <div class="board-wrapper">
+    <div class="board">
+      <div class="board-header">
+        <div class="cell">Zona / Unidad</div>
+        <div class="cell">06:00–07:00</div>
+        <div class="cell">07:00–08:00</div>
+        <div class="cell">08:00–09:00</div>
+        <div class="cell">09:00–10:00</div>
+        <div class="cell">10:00–12:00</div>
+        <div class="cell">12:00–14:00</div>
+      </div>
+
+      <!-- Row 1: H-100 -->
+      <div class="board-row conflict-row">
+        <div class="zone">H-100<small>Horno principal</small></div>
+        <div class="slot">
+          <div class="task-card mech" onclick="openTaskModal('Retubing horno',  'Mecánica', 'H-100, Nivel 3', 'Alto', 'Izado de tubos — grúa 40T activa. Requiere zona exclusión 15m.')">Retubing horno<div class="risk-badge" style="background:var(--danger)">!</div></div>
+        </div>
+        <div class="slot">
+          <div class="task-card mech" onclick="openTaskModal('Retubing horno', 'Mecánica', 'H-100, Nivel 3', 'Alto', 'Izado de tubos — grúa 40T activa.')">Retubing horno</div>
+        </div>
+        <div class="slot conflict-slot">
+          <div class="task-card hot" onclick="openTaskModal('Soldadura carcasa', 'Trabajo en caliente', 'H-100, Nivel 2', 'Crítico', 'Soldadura TIG en carcasa del horno. Conflicto con espacio confinado en paralelo.')">Soldadura carcasa<div class="risk-badge" style="background:var(--danger)">!</div></div>
+          <div class="task-card conf" onclick="openTaskModal('Inspección interna', 'Espacio confinado', 'H-100, Interior', 'Crítico', 'Entrada a espacio confinado para inspección de refractario.')">Insp. confinado<div class="risk-badge" style="background:var(--danger)">!</div></div>
+          <div class="conflict-indicator">Coactividad CRÍTICA</div>
+        </div>
+        <div class="slot conflict-slot">
+          <div class="task-card hot" onclick="openTaskModal('Soldadura carcasa', 'Trabajo en caliente', 'H-100, Nivel 2', 'Crítico', 'Soldadura TIG continuación.')">Soldadura carcasa</div>
+          <div class="task-card conf" onclick="openTaskModal('Inspección interna', 'Espacio confinado', 'H-100, Interior', 'Crítico', 'Continuación inspección confinado.')">Insp. confinado</div>
+          <div class="conflict-indicator">Coactividad CRÍTICA</div>
+        </div>
+        <div class="slot">
+          <div class="task-card insp" onclick="openTaskModal('Prueba presión', 'Inspección', 'H-100, Nivel 1', 'Medio', 'Prueba hidrostática de headers.')">Prueba presión</div>
+        </div>
+        <div class="slot">
+          <div class="task-card clean" onclick="openTaskModal('Limpieza entorno', 'Limpieza', 'H-100, General', 'Bajo', 'Recogida de materiales y limpieza zona.')">Limpieza</div>
+        </div>
+      </div>
+
+      <!-- Row 2: Rack Eléctrico Norte -->
+      <div class="board-row">
+        <div class="zone">Rack Eléctrico N.<small>Subestación 66kV</small></div>
+        <div class="slot"></div>
+        <div class="slot">
+          <div class="task-card elec" onclick="openTaskModal('Cambio transformador', 'Eléctrica', 'Rack Norte, Bahía 3', 'Alto', 'Izado de transformador 12T. LOTO activo en circuito 3A.')">Cambio transf.<div class="risk-badge" style="background:var(--warning)">!</div></div>
+        </div>
+        <div class="slot">
+          <div class="task-card elec" onclick="openTaskModal('Cambio transformador', 'Eléctrica', 'Rack Norte, Bahía 3', 'Alto', 'Continuación izado.')">Cambio transf.</div>
+        </div>
+        <div class="slot">
+          <div class="task-card elec" onclick="openTaskModal('Reconexión celdas', 'Eléctrica', 'Rack Norte, Bahía 1-2', 'Medio', 'Reconexión de celdas MT tras mantenimiento.')">Reconexión celdas</div>
+        </div>
+        <div class="slot">
+          <div class="task-card insp" onclick="openTaskModal('Termografía', 'Inspección', 'Rack Norte, General', 'Bajo', 'Inspección termográfica de conexiones.')">Termografía</div>
+        </div>
+        <div class="slot"></div>
+      </div>
+
+      <!-- Row 3: TK-123 -->
+      <div class="board-row conflict-row">
+        <div class="zone">Tanque TK-123<small>Almacenamiento crudo</small></div>
+        <div class="slot">
+          <div class="task-card clean" onclick="openTaskModal('Desgasificación', 'Limpieza', 'TK-123, Interior', 'Alto', 'Ventilación forzada para desgasificación pre-entrada.')">Desgasificación</div>
+        </div>
+        <div class="slot">
+          <div class="task-card clean" onclick="openTaskModal('Desgasificación', 'Limpieza', 'TK-123, Interior', 'Alto', 'Continuación ventilación.')">Desgasificación</div>
+        </div>
+        <div class="slot">
+          <div class="task-card conf" onclick="openTaskModal('Limpieza interior', 'Espacio confinado', 'TK-123, Interior', 'Alto', 'Entrada a tanque para limpieza de fondos.')">Limpieza interior</div>
+        </div>
+        <div class="slot conflict-slot">
+          <div class="task-card conf" onclick="openTaskModal('Limpieza interior', 'Espacio confinado', 'TK-123, Interior', 'Crítico', 'Personas dentro del tanque.')">Limpieza interior</div>
+          <div class="task-card hot" onclick="openTaskModal('Reparación boquilla', 'Trabajo en caliente', 'TK-123, Boquilla N3', 'Crítico', 'Soldadura en boquilla N3 del tanque. CONFLICTO: personas en interior.')">Reparación boquilla<div class="risk-badge" style="background:var(--danger)">!</div></div>
+          <div class="conflict-indicator">Soldadura + personas dentro</div>
+        </div>
+        <div class="slot">
+          <div class="task-card insp" onclick="openTaskModal('Inspección soldadura', 'Inspección', 'TK-123, Boquilla N3', 'Bajo', 'RX de soldadura boquilla.')">Insp. soldadura</div>
+        </div>
+        <div class="slot">
+          <div class="task-card mech" onclick="openTaskModal('Montaje manhole', 'Mecánica', 'TK-123, Acceso', 'Bajo', 'Cierre de manhole una vez finalizada inspección.')">Montaje manhole</div>
+        </div>
+      </div>
+
+      <!-- Row 4: Columna C-201 -->
+      <div class="board-row">
+        <div class="zone">Columna C-201<small>Destilación atmosférica</small></div>
+        <div class="slot">
+          <div class="task-card mech" onclick="openTaskModal('Apertura platos', 'Mecánica', 'C-201, Nivel 5-8', 'Medio', 'Extracción de platos para inspección.')">Apertura platos</div>
+        </div>
+        <div class="slot">
+          <div class="task-card mech" onclick="openTaskModal('Apertura platos', 'Mecánica', 'C-201, Nivel 5-8', 'Medio', 'Continuación extracción.')">Apertura platos</div>
+        </div>
+        <div class="slot">
+          <div class="task-card insp" onclick="openTaskModal('UT espesores', 'Inspección', 'C-201, Nivel 3-8', 'Bajo', 'Medición de espesores por ultrasonidos.')">UT espesores</div>
+        </div>
+        <div class="slot">
+          <div class="task-card insp" onclick="openTaskModal('UT espesores', 'Inspección', 'C-201, Nivel 3-8', 'Bajo', 'Continuación medición.')">UT espesores</div>
+        </div>
+        <div class="slot">
+          <div class="task-card mech" onclick="openTaskModal('Montaje platos nuevos', 'Mecánica', 'C-201, Nivel 5-8', 'Medio', 'Instalación de platos nuevos.')">Montaje platos</div>
+        </div>
+        <div class="slot">
+          <div class="task-card mech" onclick="openTaskModal('Montaje platos nuevos', 'Mecánica', 'C-201, Nivel 5-8', 'Medio', 'Continuación montaje.')">Montaje platos</div>
+        </div>
+      </div>
+
+      <!-- Row 5: Pipe Rack Zona Sur -->
+      <div class="board-row">
+        <div class="zone">Pipe Rack Sur<small>Líneas de proceso</small></div>
+        <div class="slot"></div>
+        <div class="slot">
+          <div class="task-card hot" onclick="openTaskModal('Corte línea 6\"', 'Trabajo en caliente', 'Pipe Rack Sur, Tramo 4', 'Alto', 'Oxicorte en línea de 6 pulgadas. Vaciado y blindado completado.')">Corte línea 6"<div class="risk-badge" style="background:var(--warning)">!</div></div>
+        </div>
+        <div class="slot">
+          <div class="task-card hot" onclick="openTaskModal('Soldadura línea', 'Trabajo en caliente', 'Pipe Rack Sur, Tramo 4', 'Alto', 'Soldadura de nuevo tramo de tubería.')">Soldadura línea</div>
+        </div>
+        <div class="slot">
+          <div class="task-card insp" onclick="openTaskModal('RX soldadura', 'Inspección', 'Pipe Rack Sur, Tramo 4', 'Bajo', 'Radiografía de soldaduras.')">RX soldadura</div>
+        </div>
+        <div class="slot">
+          <div class="task-card mech" onclick="openTaskModal('Aislamiento térmico', 'Mecánica', 'Pipe Rack Sur, Tramo 3-5', 'Bajo', 'Instalación de calorifugado.')">Aislamiento</div>
+        </div>
+        <div class="slot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#1d4e89; border-left:3px solid #3a86ff;"></div> Mecánica</div>
+    <div class="legend-item"><div class="legend-color" style="background:#5a189a; border-left:3px solid #9d4edd;"></div> Eléctrica</div>
+    <div class="legend-item"><div class="legend-color" style="background:#6a040f; border-left:3px solid #e63946;"></div> Trabajo en caliente</div>
+    <div class="legend-item"><div class="legend-color" style="background:#774936; border-left:3px solid #e76f51;"></div> Espacio confinado</div>
+    <div class="legend-item"><div class="legend-color" style="background:#1b4332; border-left:3px solid #2a9d8f;"></div> Inspección</div>
+    <div class="legend-item"><div class="legend-color" style="background:#3a506b; border-left:3px solid #6fffe9;"></div> Limpieza/Preparación</div>
+    <div class="legend-item"><div class="legend-color" style="background:var(--danger); width:12px; height:12px; border-radius:50%;"></div> Conflicto coactividad</div>
+  </div>
+
+  <!-- AI Suggestions -->
+  <div class="suggestion-panel">
+    <h3>SENTINEL IA — Sugerencias de reprogramación</h3>
+
+    <div class="suggestion-item">
+      <div class="desc">
+        <strong>H-100, 08:00–10:00:</strong> Soldadura en carcasa y espacio confinado simultáneos en la misma unidad. Riesgo de acumulación de gases de soldadura dentro del espacio confinado. Propuesta: mover la soldadura al turno de tarde (14:00–16:00).
+      </div>
+      <div class="impact">Riesgo: -62%</div>
+      <div class="actions">
+        <button class="btn-accept" onclick="acceptSuggestion(this, 'H-100')">Aceptar</button>
+        <button class="btn-reject">Rechazar</button>
+      </div>
+    </div>
+
+    <div class="suggestion-item">
+      <div class="desc">
+        <strong>TK-123, 09:00–10:00:</strong> Trabajo en caliente en boquilla mientras hay personal de limpieza dentro del tanque. Restricción absoluta: no se puede soldar con personas en interior. Propuesta: secuenciar — primero salida de limpieza (09:00–10:00), después boquilla (10:00–12:00).
+      </div>
+      <div class="impact">Riesgo: ELIMINADO</div>
+      <div class="actions">
+        <button class="btn-accept" onclick="acceptSuggestion(this, 'TK-123')">Aceptar</button>
+        <button class="btn-reject">Rechazar</button>
+      </div>
+    </div>
+
+    <div class="suggestion-item">
+      <div class="desc">
+        <strong>Densidad Zona Sur, 07:00–09:00:</strong> 38 personas previstas en un radio de 50m (corte + soldadura + rack eléctrico). Propuesta: reubicar carga de trabajo de insuladores al Tramo 6 (zona despejada).
+      </div>
+      <div class="impact">Densidad: -40%</div>
+      <div class="actions">
+        <button class="btn-accept" onclick="acceptSuggestion(this, 'Pipe Rack')">Aceptar</button>
+        <button class="btn-reject">Rechazar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- VIEW B: MI TURNO                       -->
+<!-- ═══════════════════════════════════════ -->
+<div class="view" id="view-b">
+  <div class="worker-header">
+    <div class="worker-avatar">JL</div>
+    <div class="worker-info">
+      <h2>José Luis Martínez</h2>
+      <p>Tubero — MASA Industrial S.L. · Equipo B3</p>
+    </div>
+    <div class="worker-status">
+      <div class="chip chip-ok">✓ Briefing completado</div>
+      <div class="chip chip-ok">✓ EPI verificado</div>
+      <div class="chip chip-warn">⚠ 1 alerta zona</div>
+    </div>
+  </div>
+
+  <!-- Nearby alerts -->
+  <div class="nearby-alert">
+    <h3>Trabajos peligrosos cerca de tus zonas hoy</h3>
+    <div class="nearby-item">
+      <div class="nearby-dist close">3m<small>distancia</small></div>
+      <div class="details">
+        <strong>Trabajo en caliente — Soldadura carcasa de horno H-100, Nivel 2</strong><br>
+        <span class="sub">08:00–10:00 · Equipo de TECNICAS REUNIDAS · Gases de soldadura → Usar respirador con filtro ABE1</span>
+      </div>
+    </div>
+    <div class="nearby-item">
+      <div class="nearby-dist medium">12m<small>distancia</small></div>
+      <div class="details">
+        <strong>Izado — Grúa 40T moviendo tubos en H-100, Nivel 3</strong><br>
+        <span class="sub">06:00–08:00 · Zona de exclusión 15m activa · No acceder al Nivel 3 hasta las 08:15</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's tasks -->
+  <div class="shift-grid">
+    <div class="shift-card c-blue">
+      <div class="time">06:30 – 08:00</div>
+      <div class="title">Preparación andamio H-100 Nivel 2</div>
+      <div class="location">📍 H-100, Nivel 2 — Cara norte</div>
+      <div class="epi-list">
+        <span class="epi-tag">🪖 Casco</span>
+        <span class="epi-tag">🧤 Guantes</span>
+        <span class="epi-tag">👢 Botas S3</span>
+        <span class="epi-tag">🔗 Arnés</span>
+      </div>
+      <div class="risk-note">⚠ Altura: arnés obligatorio anclado a línea de vida del andamio. Verificar certificación andamio (tag verde) antes de subir.</div>
+      <div class="status-check">✓ Permiso de trabajo activo · PT-2026-04812</div>
+    </div>
+
+    <div class="shift-card c-red">
+      <div class="time">08:15 – 12:00</div>
+      <div class="title">Corte y preparación de spool — Línea alimentación H-100</div>
+      <div class="location">📍 H-100, Nivel 2 — Cara norte, Línea 6" entrada</div>
+      <div class="epi-list">
+        <span class="epi-tag">🪖 Casco</span>
+        <span class="epi-tag">🧤 Guantes anticorte</span>
+        <span class="epi-tag">👢 Botas S3</span>
+        <span class="epi-tag">🔗 Arnés</span>
+        <span class="epi-tag">👂 Protección auditiva</span>
+        <span class="epi-tag">🫁 Respirador ABE1</span>
+      </div>
+      <div class="risk-note">⚠ CON TRABAJO EN CALIENTE EN PARALELO (soldadura carcasa, mismo nivel). Respirador ABE1 obligatorio por gases de soldadura. Si hueles gas → evacúa al punto de reunión 3 y avisa por radio canal 7.</div>
+      <div class="status-check">✓ Permiso de trabajo activo · PT-2026-04815</div>
+    </div>
+
+    <div class="shift-card c-green">
+      <div class="time">12:30 – 14:00</div>
+      <div class="title">Prefabricación spool en taller</div>
+      <div class="location">📍 Taller mecánico — Nave 2</div>
+      <div class="epi-list">
+        <span class="epi-tag">🪖 Casco</span>
+        <span class="epi-tag">🧤 Guantes</span>
+        <span class="epi-tag">👓 Gafas</span>
+      </div>
+      <div class="status-check">✓ Sin riesgos especiales · Zona taller</div>
+    </div>
+  </div>
+
+  <!-- AI Briefing -->
+  <div class="briefing-card">
+    <h3>Briefing de seguridad personalizado — generado por IA</h3>
+    <div class="briefing-text">
+      Buenos días, José Luis. Hoy trabajas en <strong>H-100, Nivel 2</strong> durante la mayor parte de tu turno. Hay tres cosas que debes saber:<br><br>
+      <strong>1.</strong> Entre las 08:00 y las 10:00, el equipo de Técnicas Reunidas estará soldando la carcasa del horno a 3 metros de tu posición de trabajo. Los gases de soldadura (cromo hexavalente, manganeso) se dispersarán hacia tu zona dado el viento NE previsto de 12km/h. <strong>Usa el respirador ABE1 de forma continua</strong> durante ese periodo.<br><br>
+      <strong>2.</strong> Ayer se registró un Near Miss en H-100 Nivel 3: una herramienta cayó desde la plataforma del horno alcanzando la zona donde hoy vas a trabajar. La malla anticaída de objetos ha sido instalada esta madrugada, pero <strong>verifica visualmente que está colocada antes de posicionarte</strong>.<br><br>
+      <strong>3.</strong> La grúa de 40T opera de 06:00 a 08:00 con zona de exclusión de 15m que incluye parcialmente tu acceso. <strong>No subas al Nivel 2 hasta las 08:15</strong>. Tu primera tarea (andamio, 06:30) se accede por la escalera oeste, fuera de la zona de exclusión.
+    </div>
+    <div class="briefing-quiz">
+      <div class="question">Pregunta de verificación: ¿Qué EPI adicional necesitas entre las 08:00 y las 10:00 por la soldadura cercana?</div>
+      <div class="options">
+        <label><input type="radio" name="q1" value="wrong1"> Gafas de soldadura</label>
+        <label><input type="radio" name="q1" value="correct"> Respirador ABE1</label>
+        <label><input type="radio" name="q1" value="wrong2"> Traje de protección química</label>
+      </div>
+      <button class="briefing-btn" onclick="checkQuiz()">Confirmar respuesta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- VIEW C: LECCIONES APRENDIDAS           -->
+<!-- ═══════════════════════════════════════ -->
+<div class="view" id="view-c">
+  <div class="lecciones-header">
+    <h2>Lecciones Aprendidas — Parada San Roque 2024</h2>
+    <div class="filter-bar">
+      <select id="filter-type">
+        <option value="all">Todos los eventos</option>
+        <option value="incident">Incidentes</option>
+        <option value="nearmiss">Near Misses</option>
+        <option value="improvement">Mejoras</option>
+      </select>
+      <select id="filter-risk">
+        <option value="all">Todos los riesgos</option>
+        <option value="coact">Coactividad</option>
+        <option value="conf">Espacio confinado</option>
+        <option value="hot">Trabajo en caliente</option>
+        <option value="height">Trabajo en altura</option>
+      </select>
+      <select>
+        <option>Todas las zonas</option>
+        <option>H-100</option>
+        <option>TK-123</option>
+        <option>Pipe Rack</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Pattern summary -->
+  <div class="pattern-summary">
+    <h3>📈 Patrones de riesgo detectados en planificación actual</h3>
+    <div class="pattern-meters">
+      <div class="meter">
+        <div class="meter-value danger" id="pattern-coact">7</div>
+        <div class="meter-bar"><div class="meter-fill" style="width:70%; background: var(--danger);" id="bar-coact"></div></div>
+        <div class="meter-label">Patrones de coactividad<br>coincidentes con 2024</div>
+      </div>
+      <div class="meter">
+        <div class="meter-value warning">4</div>
+        <div class="meter-bar"><div class="meter-fill" style="width:40%; background: var(--warning);"></div></div>
+        <div class="meter-label">Secuencias de riesgo<br>similares a Near Misses</div>
+      </div>
+      <div class="meter">
+        <div class="meter-value ok">12</div>
+        <div class="meter-bar"><div class="meter-fill" style="width:80%; background: var(--success);"></div></div>
+        <div class="meter-label">Lecciones aprendidas<br>incorporadas al plan</div>
+      </div>
+      <div class="meter">
+        <div class="meter-value" style="color: var(--accent);">89%</div>
+        <div class="meter-bar"><div class="meter-fill" style="width:89%; background: var(--accent);"></div></div>
+        <div class="meter-label">Cobertura de mitigación<br>vs. histórico</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline-container">
+    <div class="timeline-line"></div>
+
+    <div class="timeline-event" data-type="incident" data-risk="coact">
+      <div class="dot dot-incident"></div>
+      <div class="timeline-card">
+        <div class="meta-row">
+          <span class="date">Día 8 — 15 Mar 2024 · 09:45</span>
+          <span class="type-badge type-incident">Incidente</span>
+          <span class="zone-tag">H-100</span>
+        </div>
+        <div class="event-title">Exposición a gases de soldadura en espacio confinado</div>
+        <div class="event-desc">
+          Dos insuladores sin protección respiratoria adecuada compartieron plataforma con soldadores durante 45 minutos. Uno reportó mareos y fue evacuado. Causa raíz: permisos separados sin detección de coactividad en la misma zona.
+        </div>
+        <div class="pattern-match">
+          PATRÓN DETECTADO en plan 2026: H-100, Día 12, 08:00–10:00 — soldadura carcasa + espacio confinado simultáneos. <strong>SENTINEL ha propuesto reprogramación.</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-event" data-type="nearmiss" data-risk="height">
+      <div class="dot dot-nearmiss"></div>
+      <div class="timeline-card">
+        <div class="meta-row">
+          <span class="date">Día 10 — 17 Mar 2024 · 11:20</span>
+          <span class="type-badge type-nearmiss">Near Miss</span>
+          <span class="zone-tag">H-100</span>
+        </div>
+        <div class="event-title">Caída de herramienta desde Nivel 3 del horno</div>
+        <div class="event-desc">
+          Una llave de 2kg cayó 8 metros desde la plataforma del horno, impactando en zona donde minutos antes había personal. No hubo heridos por casualidad. No existía malla anticaída de objetos.
+        </div>
+        <div class="pattern-match">
+          LECCIÓN INCORPORADA en plan 2026: Se ha añadido instalación de malla anticaída como tarea previa obligatoria antes de cualquier trabajo en Nivel 2 bajo Nivel 3 activo.
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-event" data-type="nearmiss" data-risk="conf">
+      <div class="dot dot-nearmiss"></div>
+      <div class="timeline-card">
+        <div class="meta-row">
+          <span class="date">Día 14 — 21 Mar 2024 · 14:10</span>
+          <span class="type-badge type-nearmiss">Near Miss</span>
+          <span class="zone-tag">TK-123</span>
+        </div>
+        <div class="event-title">Soldadura en boquilla con personal dentro del tanque</div>
+        <div class="event-desc">
+          Se inició soldadura en la boquilla N3 del TK-123 sin verificar que el equipo de limpieza interior ya había salido. El vigía detectó la situación y paralizó. 4 personas estuvieron dentro durante 8 minutos con soldadura activa en el exterior.
+        </div>
+        <div class="pattern-match">
+          PATRÓN DETECTADO en plan 2026: TK-123, Día 12, 09:00–10:00 — misma configuración. <strong>SENTINEL ha bloqueado esta programación como restricción absoluta.</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-event" data-type="incident" data-risk="coact">
+      <div class="dot dot-incident"></div>
+      <div class="timeline-card">
+        <div class="meta-row">
+          <span class="date">Día 18 — 25 Mar 2024 · 07:30</span>
+          <span class="type-badge type-incident">Incidente</span>
+          <span class="zone-tag">Pipe Rack Sur</span>
+        </div>
+        <div class="event-title">Sobrecarga de personal en zona de corte</div>
+        <div class="event-desc">
+          42 personas de 5 empresas diferentes confluían en un radio de 30m: equipo de corte, insuladores, electricistas, pintores y andamieros. Confusión en vías de evacuación. Un conato de emergencia por fuga de nitrógeno se gestionó caóticamente porque nadie sabía cuántas personas había en la zona.
+        </div>
+        <div class="pattern-match">
+          PATRÓN DETECTADO en plan 2026: Pipe Rack Sur + Rack Eléctrico Norte, Día 12, 07:00–09:00 — densidad de 38 personas prevista. <strong>SENTINEL propone redistribución.</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-event" data-type="improvement" data-risk="coact">
+      <div class="dot dot-improvement"></div>
+      <div class="timeline-card">
+        <div class="meta-row">
+          <span class="date">Post-parada — Abr 2024</span>
+          <span class="type-badge type-improvement">Mejora implementada</span>
+          <span class="zone-tag">General</span>
+        </div>
+        <div class="event-title">Nuevo protocolo de control de densidad por zona</div>
+        <div class="event-desc">
+          Se estableció un máximo de 25 personas por zona de 50m de radio cuando hay trabajos en caliente activos. Implementado en procedimiento pero sin herramienta digital de monitorización en tiempo real.
+        </div>
+        <div class="pattern-match">
+          SENTINEL integra este protocolo: monitorización automática de densidad vía tags UWB con alerta cuando se supera el umbral de 25 personas/zona.
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-event" data-type="nearmiss" data-risk="hot">
+      <div class="dot dot-nearmiss"></div>
+      <div class="timeline-card">
+        <div class="meta-row">
+          <span class="date">Día 22 — 29 Mar 2024 · 16:40</span>
+          <span class="type-badge type-nearmiss">Near Miss</span>
+          <span class="zone-tag">C-201</span>
+        </div>
+        <div class="event-title">Ignición de vapores durante corte en columna</div>
+        <div class="event-desc">
+          Chispas de oxicorte iniciaron combustión de residuos en la bandeja de la columna 3 niveles por debajo. El equipo inferior no estaba informado del corte por encima. Se extinguió rápidamente pero evidenció fallo de comunicación vertical.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag simulator -->
+  <div class="drag-simulator">
+    <h3>🔄 Simulador: ¿Qué pasa si muevo tareas?</h3>
+    <p>Selecciona un cambio de planificación para ver cómo afecta al número de patrones de riesgo históricos detectados.</p>
+
+    <div class="sim-row">
+      <div class="sim-box">
+        <strong>Cambio propuesto:</strong><br>
+        <select id="sim-select" onchange="updateSimulation()" style="background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:4px; width:100%; margin-top:6px; font-size:13px;">
+          <option value="0">Selecciona un cambio...</option>
+          <option value="1">Mover soldadura H-100 al turno tarde</option>
+          <option value="2">Secuenciar TK-123 (limpieza → boquilla)</option>
+          <option value="3">Redistribuir personal Pipe Rack</option>
+          <option value="4">Aplicar los 3 cambios</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sim-result" id="sim-result" style="display:none;">
+      <div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Patrones de riesgo antes</div>
+        <div class="before" id="sim-before">7</div>
+      </div>
+      <div class="arrow-change">→</div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Patrones de riesgo después</div>
+        <div class="after" id="sim-after">—</div>
+      </div>
+      <div style="margin-left: 20px; font-size: 13px;" id="sim-text"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this) closeModal()">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div class="tag-list">
+      <span class="epi-tag" id="modal-type"></span>
+      <span class="epi-tag" id="modal-location"></span>
+      <span class="epi-tag" id="modal-risk" style="font-weight:700;"></span>
+    </div>
+    <p id="modal-desc"></p>
+    <p id="modal-extra" style="color: var(--warning); font-weight: 600;"></p>
+    <button class="close-btn" onclick="closeModal()">Cerrar</button>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Tab navigation
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('view-' + tab.dataset.view).classList.add('active');
+    });
+  });
+
+  // Task modal
+  function openTaskModal(title, type, location, risk, desc) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-type').textContent = type;
+    document.getElementById('modal-location').textContent = location;
+    const riskEl = document.getElementById('modal-risk');
+    riskEl.textContent = 'Riesgo: ' + risk;
+    riskEl.style.color = risk === 'Crítico' ? '#e63946' : risk === 'Alto' ? '#f4a261' : '#2a9d8f';
+    document.getElementById('modal-desc').textContent = desc;
+
+    const extra = document.getElementById('modal-extra');
+    if (risk === 'Crítico') {
+      extra.textContent = '⚠ Este trabajo tiene conflictos de coactividad activos. Consulta las sugerencias de SENTINEL.';
+    } else if (risk === 'Alto') {
+      extra.textContent = '⚠ Riesgo alto — verificar EPIs específicos y permisos antes de iniciar.';
+    } else {
+      extra.textContent = '';
+    }
+
+    document.getElementById('modal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+  }
+
+  // Accept suggestion
+  function acceptSuggestion(btn, zone) {
+    const item = btn.closest('.suggestion-item');
+    item.style.background = 'rgba(42,157,143,.1)';
+    item.style.borderLeft = '4px solid var(--success)';
+    btn.textContent = '✓ Aceptada';
+    btn.disabled = true;
+    btn.style.opacity = '.7';
+    showToast('Reprogramación aceptada para ' + zone + '. Enablon actualizado.');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // Quiz
+  function checkQuiz() {
+    const selected = document.querySelector('input[name="q1"]:checked');
+    if (!selected) { showToast('Selecciona una respuesta'); return; }
+    if (selected.value === 'correct') {
+      showToast('✓ Correcto — Briefing confirmado. Acceso autorizado.');
+      selected.closest('label').style.background = 'rgba(42,157,143,.15)';
+      selected.closest('label').style.borderColor = 'var(--success)';
+    } else {
+      showToast('✗ Incorrecto — La respuesta correcta es "Respirador ABE1". Revisa el briefing.');
+      selected.closest('label').style.background = 'rgba(230,57,70,.1)';
+      selected.closest('label').style.borderColor = 'var(--danger)';
+    }
+  }
+
+  // Filter timeline
+  document.getElementById('filter-type').addEventListener('change', filterTimeline);
+  document.getElementById('filter-risk').addEventListener('change', filterTimeline);
+
+  function filterTimeline() {
+    const type = document.getElementById('filter-type').value;
+    const risk = document.getElementById('filter-risk').value;
+    document.querySelectorAll('.timeline-event').forEach(ev => {
+      const matchType = type === 'all' || ev.dataset.type === type;
+      const matchRisk = risk === 'all' || ev.dataset.risk === risk;
+      ev.style.display = (matchType && matchRisk) ? 'block' : 'none';
+    });
+  }
+
+  // Simulation
+  function updateSimulation() {
+    const val = document.getElementById('sim-select').value;
+    const result = document.getElementById('sim-result');
+    if (val === '0') { result.style.display = 'none'; return; }
+    result.style.display = 'flex';
+
+    const data = {
+      '1': { after: 5, text: 'Eliminados 2 patrones de coactividad soldadura-confinado en H-100', color: 'var(--warning)' },
+      '2': { after: 4, text: 'Eliminados 3 patrones: restricción absoluta TK-123 resuelta + 2 dependencias', color: 'var(--success)' },
+      '3': { after: 6, text: 'Eliminado 1 patrón de sobrecarga de personal en Pipe Rack', color: 'var(--warning)' },
+      '4': { after: 1, text: '6 de 7 patrones históricos eliminados. Riesgo residual: secuencia de corte C-201 (requiere comunicación vertical reforzada)', color: 'var(--success)' }
+    };
+
+    const d = data[val];
+    document.getElementById('sim-after').textContent = d.after;
+    document.getElementById('sim-after').style.color = d.color;
+    document.getElementById('sim-text').textContent = d.text;
+
+    // Update pattern counter in summary
+    const patternEl = document.getElementById('pattern-coact');
+    const barEl = document.getElementById('bar-coact');
+    patternEl.textContent = d.after;
+    barEl.style.width = (d.after * 10) + '%';
+    if (d.after <= 2) {
+      patternEl.className = 'meter-value ok';
+      barEl.style.background = 'var(--success)';
+    } else if (d.after <= 4) {
+      patternEl.className = 'meter-value warning';
+      barEl.style.background = 'var(--warning)';
+    } else {
+      patternEl.className = 'meter-value danger';
+      barEl.style.background = 'var(--danger)';
+    }
+  }
+
+  // Keyboard shortcut
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === '1') document.querySelector('[data-view="a"]').click();
+    if (e.key === '2') document.querySelector('[data-view="b"]').click();
+    if (e.key === '3') document.querySelector('[data-view="c"]').click();
+  });
+</script>
+
+</body>
+</html>
