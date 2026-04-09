@@ -1,4 +1,4 @@
-Optimización de las Paradas de Mantenimiento
+# Optimización de las Paradas de Mantenimiento
 
 Cada componente de un parque debe ser parado para revisión y mantenimiento periódicamente. Dichas paradas suponen una pérdida de producción, por lo que es crucial optimizarlas. Además, las paradas de mantenimiento suelen suponer introducir muchas personas distintas (cuadriplicando la cantidad de personas que normalmente trabajan en el parque), personas que pueden no tener una misma cultura de empresa. Dichas personas, en el statu quo, no tienen una comunicación efectiva y fluida entre sí.
 

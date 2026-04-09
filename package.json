@@ -1,0 +1,14 @@
+{
+  "name": "sentinel-field",
+  "version": "1.0.0",
+  "description": "SENTINEL — Copiloto de seguridad contextual para contratistas en paradas técnicas",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "better-sqlite3": "^11.7.0"
+  }
+}
