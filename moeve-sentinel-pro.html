@@ -1,0 +1,2340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MOEVE — SENTINEL Safety Command Center</title>
+  <style>
+    :root {
+      --bg: #eef3f7;
+      --shell: #f7fafc;
+      --panel: #ffffff;
+      --panel-2: #f2f6fa;
+      --ink: #122334;
+      --ink-soft: #5f6f7e;
+      --ink-faint: #8a99a7;
+      --line: #d8e3ec;
+      --navy: #102033;
+      --navy-2: #16283d;
+      --blue: #0c8de7;
+      --blue-2: #4bc7ff;
+      --mint: #95efba;
+      --lime: #dfff67;
+      --violet: #d289ff;
+      --rose: #ff87a5;
+      --coral: #ff7b73;
+      --amber: #ffb24a;
+      --danger: #db4a43;
+      --success: #1f9b6f;
+      --shadow-xl: 0 30px 80px rgba(15, 31, 49, .16);
+      --shadow-lg: 0 18px 40px rgba(15, 31, 49, .10);
+      --shadow-md: 0 10px 22px rgba(15, 31, 49, .08);
+      --gradient-brand: linear-gradient(135deg, #0c8de7 0%, #88eeb9 56%, #d289ff 100%);
+      --gradient-hero: linear-gradient(135deg, #0f2033 0%, #123554 42%, #0c8de7 100%);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(76, 199, 255, .18), transparent 24%),
+        radial-gradient(circle at top right, rgba(149, 239, 186, .18), transparent 20%),
+        linear-gradient(180deg, #f6fafc 0%, #edf3f7 100%);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 292px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, #0f1d2b 0%, #11263b 100%);
+      color: white;
+      padding: 28px 22px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid rgba(255,255,255,.08);
+    }
+
+    .brand {
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+      border-radius: 24px;
+      background: linear-gradient(155deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+      margin-bottom: 22px;
+    }
+
+    .brand::after {
+      content: "";
+      position: absolute;
+      inset: auto -25px -35px auto;
+      width: 112px;
+      height: 140px;
+      background: linear-gradient(180deg, rgba(149,239,186,.9), rgba(12,141,231,.15));
+      clip-path: polygon(20% 0, 100% 0, 72% 100%, 0% 100%);
+      opacity: .9;
+    }
+
+    .brand-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: var(--gradient-brand);
+      position: relative;
+      box-shadow: 0 8px 22px rgba(76, 199, 255, .25);
+      flex: 0 0 auto;
+    }
+
+    .brand-mark::before {
+      content: "";
+      position: absolute;
+      right: 7px;
+      top: 6px;
+      width: 18px;
+      height: 28px;
+      background: rgba(255,255,255,.95);
+      clip-path: polygon(18% 0, 100% 0, 76% 100%, 0 100%);
+      border-radius: 4px;
+    }
+
+    .brand h1 {
+      font-size: 15px;
+      line-height: 1.05;
+      letter-spacing: .12em;
+      margin: 0;
+      font-weight: 800;
+    }
+
+    .brand p {
+      margin: 10px 0 0;
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 180px;
+    }
+
+    .facility-card, .nav-block, .sidebar-footer {
+      background: linear-gradient(155deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 22px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.6);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6dffb3;
+      box-shadow: 0 0 0 0 rgba(109,255,179,.6);
+      animation: pulse 2.4s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(109,255,179,.45); }
+      75% { box-shadow: 0 0 0 12px rgba(109,255,179,0); }
+      100% { box-shadow: 0 0 0 0 rgba(109,255,179,0); }
+    }
+
+    .facility-title {
+      margin: 14px 0 6px;
+      font-size: 24px;
+      font-weight: 750;
+      line-height: 1.05;
+    }
+
+    .facility-meta {
+      color: rgba(255,255,255,.78);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .score-ring {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .ring {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: conic-gradient(#7ef2bb 0 264deg, rgba(255,255,255,.12) 264deg 360deg);
+      display: grid;
+      place-items: center;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .ring::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 50%;
+      background: #11263b;
+    }
+
+    .ring span {
+      position: relative;
+      z-index: 1;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .score-copy strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .score-copy small {
+      color: rgba(255,255,255,.66);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .nav-title {
+      margin: 0 0 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: rgba(255,255,255,.54);
+      font-weight: 700;
+    }
+
+    .nav-button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 14px;
+      border-radius: 16px;
+      color: rgba(255,255,255,.86);
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: .2s ease;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 650;
+      text-align: left;
+    }
+
+    .nav-button:hover {
+      background: rgba(255,255,255,.05);
+      border-color: rgba(255,255,255,.08);
+    }
+
+    .nav-button.active {
+      background: linear-gradient(135deg, rgba(12,141,231,.24), rgba(149,239,186,.14));
+      border-color: rgba(76,199,255,.35);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px rgba(4, 19, 34, .22);
+    }
+
+    .nav-button .count {
+      min-width: 30px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .mini-stat {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .mini-stat div {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(255,255,255,.06);
+    }
+
+    .mini-stat strong {
+      display: block;
+      font-size: 19px;
+      margin-bottom: 3px;
+    }
+
+    .mini-stat span {
+      color: rgba(255,255,255,.65);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .main {
+      padding: 26px;
+      min-width: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 8px 4px 24px;
+    }
+
+    .topbar-left h2 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.05;
+      letter-spacing: -.03em;
+    }
+
+    .topbar-left p {
+      margin: 7px 0 0;
+      color: var(--ink-soft);
+      font-size: 14px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.74);
+      border: 1px solid rgba(18,35,52,.08);
+      box-shadow: 0 8px 20px rgba(18,35,52,.05);
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--ink);
+      backdrop-filter: blur(12px);
+    }
+
+    .chip.muted {
+      color: var(--ink-soft);
+    }
+
+    .chip.primary {
+      color: white;
+      border-color: transparent;
+      background: var(--gradient-brand);
+      box-shadow: 0 18px 34px rgba(12,141,231,.22);
+      cursor: pointer;
+    }
+
+    .layout-view {
+      display: none;
+      animation: fade .28s ease;
+    }
+
+    .layout-view.active { display: block; }
+
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-radius: 32px;
+      background: var(--gradient-hero);
+      color: white;
+      padding: 28px 28px 28px;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid rgba(8, 24, 40, .08);
+      margin-bottom: 24px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: -30% auto auto 56%;
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, rgba(149,239,186,.22), transparent 60%);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: 28px;
+      bottom: -18px;
+      width: 220px;
+      height: 240px;
+      background: linear-gradient(180deg, rgba(149,239,186,.92), rgba(210,137,255,.58));
+      clip-path: polygon(20% 0, 100% 0, 72% 100%, 0 100%);
+      opacity: .9;
+      filter: drop-shadow(0 16px 28px rgba(0,0,0,.16));
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(360px, .95fr);
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .hero h3 {
+      margin: 0 0 10px;
+      font-size: 38px;
+      letter-spacing: -.04em;
+      line-height: .98;
+      max-width: 640px;
+    }
+
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,.78);
+      font-size: 15px;
+      line-height: 1.6;
+      max-width: 690px;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 22px 0 24px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.09);
+      border: 1px solid rgba(255,255,255,.14);
+      font-size: 13px;
+      font-weight: 700;
+      backdrop-filter: blur(12px);
+    }
+
+    .hero-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+      max-width: 860px;
+    }
+
+    .hero-metric {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero-metric span {
+      display: block;
+      color: rgba(255,255,255,.68);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 7px;
+      font-weight: 700;
+    }
+
+    .hero-metric strong {
+      font-size: 28px;
+      line-height: 1;
+      letter-spacing: -.03em;
+    }
+
+    .recommend-card {
+      align-self: stretch;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 26px;
+      padding: 22px;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .recommend-card h4 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: -.02em;
+    }
+
+    .recommend-card p {
+      font-size: 13px;
+      color: rgba(255,255,255,.72);
+      max-width: none;
+    }
+
+    .recommend-item {
+      background: rgba(12, 20, 31, .26);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .recommend-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 9px;
+    }
+
+    .recommend-item strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      border: 1px solid transparent;
+    }
+
+    .pill.danger { background: rgba(255,123,115,.14); color: #ffd0cb; border-color: rgba(255,123,115,.28); }
+    .pill.success { background: rgba(126,242,187,.14); color: #c6ffe2; border-color: rgba(126,242,187,.28); }
+    .pill.warning { background: rgba(255,178,74,.14); color: #ffe1b4; border-color: rgba(255,178,74,.28); }
+    .pill.info { background: rgba(76,199,255,.14); color: #d8f5ff; border-color: rgba(76,199,255,.28); }
+
+    .recommend-item p {
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .impact-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      color: rgba(255,255,255,.8);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: rgba(255,255,255,.86);
+      border: 1px solid rgba(18,35,52,.08);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .metric-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .metric-top span {
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.45;
+      max-width: 160px;
+    }
+
+    .metric-top .tiny {
+      font-size: 11px;
+      color: var(--ink-faint);
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      padding: 6px 9px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .metric-value {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .metric-value strong {
+      font-size: 40px;
+      letter-spacing: -.05em;
+      line-height: .92;
+    }
+
+    .metric-value small {
+      font-size: 14px;
+      color: var(--ink-soft);
+      font-weight: 700;
+    }
+
+    .spark {
+      height: 52px;
+      display: flex;
+      align-items: end;
+      gap: 6px;
+    }
+
+    .spark span {
+      flex: 1;
+      border-radius: 999px 999px 6px 6px;
+      background: linear-gradient(180deg, rgba(12,141,231,.92), rgba(12,141,231,.18));
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(360px, .9fr);
+      gap: 18px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(18,35,52,.08);
+      border-radius: 28px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.84), rgba(255,255,255,.52));
+    }
+
+    .panel-head h4 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -.03em;
+    }
+
+    .panel-head p {
+      margin: 7px 0 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ghost-btn {
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 12px;
+      font-weight: 750;
+      color: var(--ink);
+    }
+
+    .schedule-wrap {
+      padding: 20px 24px 24px;
+      overflow-x: auto;
+    }
+
+    .schedule {
+      min-width: 980px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(247,250,252,.95), rgba(255,255,255,.95));
+    }
+
+    .schedule-header, .schedule-row {
+      display: grid;
+      grid-template-columns: 220px repeat(8, minmax(90px, 1fr));
+    }
+
+    .schedule-header {
+      background: linear-gradient(180deg, #f5f8fb 0%, #eef4f8 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .schedule-header div,
+    .schedule-row > div {
+      border-right: 1px solid var(--line);
+      min-height: 74px;
+      position: relative;
+    }
+
+    .schedule-header div:last-child,
+    .schedule-row > div:last-child { border-right: none; }
+
+    .schedule-header div {
+      padding: 16px 14px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .schedule-header .unit-col { justify-content: flex-start; }
+
+    .schedule-row {
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.75);
+    }
+
+    .schedule-row:last-child { border-bottom: none; }
+
+    .unit-col {
+      padding: 16px 16px 14px;
+      background: linear-gradient(180deg, rgba(247,250,252,.88), rgba(243,247,250,.88));
+    }
+
+    .unit-col strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .unit-col span {
+      color: var(--ink-soft);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .slot {
+      padding: 8px;
+      background-image: linear-gradient(180deg, rgba(12,141,231,.02), rgba(12,141,231,0));
+    }
+
+    .slot.conflict {
+      background: linear-gradient(180deg, rgba(219,74,67,.08), rgba(255,123,115,.04));
+      box-shadow: inset 0 0 0 1px rgba(219,74,67,.16);
+    }
+
+    .bar {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      top: 8px;
+      padding: 10px 11px;
+      border-radius: 14px;
+      color: white;
+      font-size: 11px;
+      font-weight: 750;
+      line-height: 1.35;
+      box-shadow: 0 12px 24px rgba(16,32,51,.12);
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .bar::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+
+    .bar small {
+      display: block;
+      color: rgba(255,255,255,.72);
+      font-size: 10px;
+      font-weight: 650;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .bar.mech { background: linear-gradient(135deg, #007dcf, #2db9ff); }
+    .bar.hot { background: linear-gradient(135deg, #d94f46, #ff8a6d); }
+    .bar.conf { background: linear-gradient(135deg, #815dff, #bf8cff); }
+    .bar.elec { background: linear-gradient(135deg, #13395e, #265c8d); }
+    .bar.insp { background: linear-gradient(135deg, #118d71, #4acda8); }
+    .bar.clean { background: linear-gradient(135deg, #5f7285, #91a5b8); }
+
+    .conflict-tag {
+      position: absolute;
+      left: 10px;
+      bottom: 8px;
+      font-size: 10px;
+      font-weight: 850;
+      color: var(--danger);
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(219,74,67,.18);
+      border-radius: 999px;
+      padding: 5px 8px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .stack {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .risk-card {
+      border-radius: 22px;
+      padding: 18px;
+      background: linear-gradient(180deg, #ffffff, #f7fafc);
+      border: 1px solid var(--line);
+    }
+
+    .risk-card h5 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      letter-spacing: -.02em;
+    }
+
+    .risk-card p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .risk-score {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 15px;
+    }
+
+    .score-bar {
+      flex: 1;
+      height: 8px;
+      border-radius: 999px;
+      background: #edf3f7;
+      overflow: hidden;
+    }
+
+    .score-bar i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #ffb24a, #db4a43);
+    }
+
+    .score-number {
+      font-size: 22px;
+      font-weight: 850;
+      letter-spacing: -.04em;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .worker-shell {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+    }
+
+    .worker-hero {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: var(--gradient-brand);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      font-weight: 800;
+      box-shadow: 0 16px 28px rgba(12,141,231,.22);
+    }
+
+    .worker-hero h4 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -.03em;
+    }
+
+    .worker-hero p {
+      margin: 6px 0 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .passport {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .passport .badge {
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .03em;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .timeline-block { padding: 0 24px 24px; }
+
+    .shift-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) auto;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+
+    .shift-item:last-child { border-bottom: none; }
+
+    .shift-time {
+      font-size: 13px;
+      color: var(--blue);
+      font-weight: 800;
+      padding-top: 2px;
+    }
+
+    .shift-copy strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 5px;
+    }
+
+    .shift-copy p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .equip-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .equip-tags span {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--ink-soft);
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      padding: 6px 9px;
+      border-radius: 999px;
+    }
+
+    .shift-state {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 8px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      border: 1px solid var(--line);
+      background: #fff;
+      white-space: nowrap;
+    }
+
+    .briefing {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,252,.92)),
+        radial-gradient(circle at top right, rgba(12,141,231,.09), transparent 30%);
+    }
+
+    .briefing h4 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -.03em;
+    }
+
+    .briefing p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .hazard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .hazard-item {
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    .distance {
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 18px;
+      line-height: 1;
+      min-height: 62px;
+    }
+
+    .distance.red { background: rgba(219,74,67,.12); color: var(--danger); }
+    .distance.amber { background: rgba(255,178,74,.14); color: #b97710; }
+
+    .hazard-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .hazard-item p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .quiz {
+      margin-top: 8px;
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+    }
+
+    .quiz strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .quiz-options label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      cursor: pointer;
+      transition: .2s ease;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .quiz-options label:hover {
+      border-color: rgba(12,141,231,.28);
+      background: rgba(12,141,231,.03);
+    }
+
+    .quiz button, .scenario button, .action-row button {
+      padding: 11px 14px;
+      border-radius: 14px;
+      border: none;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      background: var(--gradient-brand);
+      color: white;
+      box-shadow: 0 14px 30px rgba(12,141,231,.18);
+    }
+
+    .secondary-btn {
+      background: white;
+      color: var(--ink);
+      border: 1px solid var(--line) !important;
+    }
+
+    .learning-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr);
+      gap: 18px;
+    }
+
+    .pattern-panel { padding: 22px; }
+
+    .pattern-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .pattern-metric {
+      border-radius: 20px;
+      padding: 16px;
+      background: linear-gradient(180deg, #ffffff, #f7fafc);
+      border: 1px solid var(--line);
+    }
+
+    .pattern-metric span {
+      display: block;
+      color: var(--ink-soft);
+      font-size: 12px;
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+
+    .pattern-metric strong {
+      display: block;
+      font-size: 30px;
+      letter-spacing: -.04em;
+      margin-bottom: 10px;
+    }
+
+    .pattern-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #edf3f7;
+      overflow: hidden;
+    }
+
+    .pattern-bar i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--gradient-brand);
+    }
+
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .event-item {
+      position: relative;
+      padding: 18px 18px 18px 22px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff, #f8fbfd);
+      overflow: hidden;
+    }
+
+    .event-item::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background: #d7e2eb;
+    }
+
+    .event-item.incident::before { background: var(--danger); }
+    .event-item.nearmiss::before { background: var(--amber); }
+    .event-item.improvement::before { background: var(--success); }
+
+    .event-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ink-faint);
+      font-weight: 800;
+    }
+
+    .event-item h5 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      letter-spacing: -.02em;
+    }
+
+    .event-item p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+
+    .match-note {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 15px;
+      border: 1px solid rgba(12,141,231,.18);
+      background: rgba(12,141,231,.05);
+      color: #0b6db1;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .scenario { padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+    .scenario-box {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff, #f7fafc);
+      padding: 18px;
+    }
+
+    .scenario-box h5 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .scenario-box p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    select {
+      width: 100%;
+      margin-top: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: white;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .sim-result {
+      border-radius: 22px;
+      padding: 18px;
+      background: linear-gradient(135deg, rgba(12,141,231,.06), rgba(149,239,186,.08));
+      border: 1px solid rgba(12,141,231,.12);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sim-numbers {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .sim-metric {
+      border-radius: 18px;
+      background: rgba(255,255,255,.82);
+      border: 1px solid rgba(18,35,52,.06);
+      padding: 16px;
+      text-align: center;
+    }
+
+    .sim-metric span {
+      display: block;
+      font-size: 11px;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+
+    .sim-metric strong {
+      font-size: 34px;
+      letter-spacing: -.05em;
+    }
+
+    .sim-arrow {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      background: linear-gradient(135deg, #0f2033, #123554);
+      color: white;
+      padding: 14px 18px;
+      border-radius: 18px;
+      box-shadow: 0 18px 48px rgba(16,32,51,.22);
+      border: 1px solid rgba(255,255,255,.08);
+      font-size: 13px;
+      font-weight: 700;
+      transform: translateY(90px);
+      opacity: 0;
+      transition: .28s ease;
+      z-index: 30;
+      max-width: 360px;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,31,49,.44);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 40;
+    }
+
+    .modal-backdrop.active { display: flex; }
+
+    .modal {
+      width: min(680px, 100%);
+      border-radius: 30px;
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(18,35,52,.08);
+      box-shadow: var(--shadow-xl);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .modal-head h4 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: -.03em;
+    }
+
+    .modal-head p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .close {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: white;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    .modal-body {
+      padding: 22px 24px 26px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mini-box {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      background: linear-gradient(180deg, #fff, #f7fafc);
+    }
+
+    .mini-box span {
+      display: block;
+      color: var(--ink-faint);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 7px;
+      font-weight: 800;
+    }
+
+    .mini-box strong {
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .modal-note {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(219,74,67,.06);
+      border: 1px solid rgba(219,74,67,.12);
+      color: #8b362d;
+      font-size: 13px;
+      font-weight: 650;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 1440px) {
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .pattern-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 1240px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar {
+        position: relative;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,.08);
+      }
+      .hero-grid,
+      .content-grid,
+      .worker-shell,
+      .learning-grid,
+      .section-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 860px) {
+      .main { padding: 16px; }
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .hero { padding: 22px; border-radius: 24px; }
+      .hero h3 { font-size: 30px; }
+      .hero-summary { grid-template-columns: 1fr; }
+      .grid-4, .pattern-grid { grid-template-columns: 1fr; }
+      .worker-hero {
+        grid-template-columns: auto 1fr;
+      }
+      .passport { grid-column: 1 / -1; justify-content: flex-start; }
+      .shift-item { grid-template-columns: 1fr; gap: 10px; }
+      .modal-grid { grid-template-columns: 1fr; }
+      .schedule-header, .schedule-row { grid-template-columns: 180px repeat(8, minmax(88px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <section class="brand">
+        <div class="brand-top">
+          <div class="brand-mark"></div>
+          <div>
+            <h1>MOEVE<br>SENTINEL</h1>
+          </div>
+        </div>
+        <p>Centro de mando de seguridad industrial para paradas técnicas, nuevas energías y operación crítica.</p>
+      </section>
+
+      <section class="facility-card">
+        <div class="eyebrow"><span class="live-dot"></span> Live shutdown intelligence</div>
+        <div class="facility-title">San Roque</div>
+        <div class="facility-meta">Parada mayor · Día 12 de 29<br>2.714 personas en planta · 47 trabajos activos</div>
+        <div class="score-ring">
+          <div class="ring"><span>73</span></div>
+          <div class="score-copy">
+            <strong>Safety posture controlada</strong>
+            <small>Quedan 3 conflictos de coactividad con capacidad real de eliminación hoy.</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="nav-block">
+        <div class="nav-title">Módulos</div>
+        <button class="nav-button active" data-view="control">
+          <span>Control Center</span>
+          <span class="count">03</span>
+        </button>
+        <button class="nav-button" data-view="workforce">
+          <span>Worker View</span>
+          <span class="count">01</span>
+        </button>
+        <button class="nav-button" data-view="learning">
+          <span>Learning Engine</span>
+          <span class="count">07</span>
+        </button>
+      </section>
+
+      <section class="sidebar-footer">
+        <div class="nav-title">Snapshot ejecutivo</div>
+        <div class="mini-stat">
+          <div>
+            <strong>38</strong>
+            <span>personas en zonas de densidad elevada</span>
+          </div>
+          <div>
+            <strong>0</strong>
+            <span>permisos vencidos</span>
+          </div>
+          <div>
+            <strong>89%</strong>
+            <span>mitigación histórica cubierta</span>
+          </div>
+          <div>
+            <strong>-62%</strong>
+            <span>riesgo tras reprogramación H-100</span>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2>Safety Command Center</h2>
+          <p>Diseñado para un jurado corporate: lectura instantánea, jerarquía clara y narrativa de valor para MOEVE.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="chip muted">Sincronización 09:42 · Enablon / PTW / UWB</div>
+          <div class="chip">Data quality 98,7%</div>
+          <button class="chip primary" id="optimizeAll">Aplicar optimización IA</button>
+        </div>
+      </header>
+
+      <section class="layout-view active" id="view-control">
+        <div class="hero">
+          <div class="hero-grid">
+            <div>
+              <div class="eyebrow" style="color: rgba(255,255,255,.76);">Positive Motion safety orchestration</div>
+              <h3>La parada deja de gestionarse como agenda.<br>Se gobierna como un sistema vivo.</h3>
+              <p>SENTINEL cruza permisos, coactividad, densidad de personal, histórico de incidentes y contexto de campo para detectar combinaciones de riesgo antes de que entren en ejecución. La interfaz prioriza decisiones operativas y las traduce en ahorro de exposición, menos caos y mejor control del turnaround.</p>
+              <div class="hero-badges">
+                <div class="hero-badge">Coactividad detectada automáticamente</div>
+                <div class="hero-badge">Restricciones absolutas bloqueadas</div>
+                <div class="hero-badge">Personalización por rol</div>
+              </div>
+              <div class="hero-summary">
+                <div class="hero-metric">
+                  <span>Conflictos críticos</span>
+                  <strong id="heroConflicts">3</strong>
+                </div>
+                <div class="hero-metric">
+                  <span>Riesgo eliminado hoy</span>
+                  <strong id="heroRisk">0%</strong>
+                </div>
+                <div class="hero-metric">
+                  <span>Replanificación viable</span>
+                  <strong>2,4 h</strong>
+                </div>
+                <div class="hero-metric">
+                  <span>Empresas coordinadas</span>
+                  <strong>11</strong>
+                </div>
+              </div>
+            </div>
+            <aside class="recommend-card">
+              <div>
+                <div class="eyebrow" style="color: rgba(255,255,255,.68);">IA operativa</div>
+                <h4>Acciones prioritarias para el jefe de parada</h4>
+              </div>
+              <div class="recommend-item">
+                <div class="recommend-item-top">
+                  <strong>H-100 · Soldadura vs. espacio confinado</strong>
+                  <span class="pill danger">Crítico</span>
+                </div>
+                <p>Mover el trabajo en caliente al turno de tarde evita exposición cruzada de humos de soldadura y anula la secuencia más parecida al incidente 2024.</p>
+                <div class="impact-row"><span>Reducción esperada</span><strong>-62% exposición</strong></div>
+              </div>
+              <div class="recommend-item">
+                <div class="recommend-item-top">
+                  <strong>TK-123 · Boquilla con personal dentro</strong>
+                  <span class="pill success">Bloqueable</span>
+                </div>
+                <p>Secuenciar limpieza interior y reparación elimina una incompatibilidad operativa no negociable.</p>
+                <div class="impact-row"><span>Impacto</span><strong>Riesgo eliminado</strong></div>
+              </div>
+              <div class="recommend-item">
+                <div class="recommend-item-top">
+                  <strong>Pipe Rack Sur · Sobrecarga de zona</strong>
+                  <span class="pill warning">Alta densidad</span>
+                </div>
+                <p>Reubicar insuladores al Tramo 6 devuelve la zona a un nivel de evacuación gestionable.</p>
+                <div class="impact-row"><span>Capacidad liberada</span><strong>-40% densidad</strong></div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <article class="metric-card">
+            <div class="metric-top">
+              <div>
+                <div class="tiny">Shutdown load</div>
+                <span>Tareas activas hoy con permisos validados y cuadrillas asignadas.</span>
+              </div>
+            </div>
+            <div class="metric-value"><strong>47</strong><small>trabajos</small></div>
+            <div class="spark">
+              <span style="height: 26px"></span><span style="height: 34px"></span><span style="height: 29px"></span><span style="height: 41px"></span><span style="height: 44px"></span><span style="height: 37px"></span><span style="height: 48px"></span>
+            </div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-top">
+              <div>
+                <div class="tiny">Coactivity index</div>
+                <span>Superposición peligrosa entre trabajos incompatibles por espacio, tiempo y emisión.</span>
+              </div>
+              <div class="tiny" style="color:#a55a00; background:#fff4e5; border-color:#ffe0b2;">Alto</div>
+            </div>
+            <div class="metric-value"><strong>8.4</strong><small>/10</small></div>
+            <div class="spark">
+              <span style="height: 18px"></span><span style="height: 27px"></span><span style="height: 31px"></span><span style="height: 39px"></span><span style="height: 44px"></span><span style="height: 46px"></span><span style="height: 52px"></span>
+            </div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-top">
+              <div>
+                <div class="tiny">People exposure</div>
+                <span>Personal simultáneo dentro de radios de riesgo con trabajos en caliente o izado.</span>
+              </div>
+              <div class="tiny" style="color:#b53c35; background:#fff1f0; border-color:#ffd0cb;">38 personas</div>
+            </div>
+            <div class="metric-value"><strong>38</strong><small>en zona roja</small></div>
+            <div class="spark">
+              <span style="height: 22px"></span><span style="height: 24px"></span><span style="height: 35px"></span><span style="height: 32px"></span><span style="height: 44px"></span><span style="height: 51px"></span><span style="height: 49px"></span>
+            </div>
+          </article>
+          <article class="metric-card">
+            <div class="metric-top">
+              <div>
+                <div class="tiny">Mitigation coverage</div>
+                <span>Lecciones históricas ya traducidas a reglas preventivas operativas.</span>
+              </div>
+              <div class="tiny" style="color:#147a56; background:#ecfbf4; border-color:#c5f1de;">Robusta</div>
+            </div>
+            <div class="metric-value"><strong id="coverageValue">89%</strong><small>cobertura</small></div>
+            <div class="spark">
+              <span style="height: 16px"></span><span style="height: 23px"></span><span style="height: 33px"></span><span style="height: 37px"></span><span style="height: 42px"></span><span style="height: 49px"></span><span style="height: 52px"></span>
+            </div>
+          </article>
+        </div>
+
+        <div class="content-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h4>Orquestación de trabajos por unidad</h4>
+                <p>La lectura es horaria, pero la decisión es sistémica: qué se solapa, dónde y con qué consecuencia.</p>
+              </div>
+              <div class="panel-actions">
+                <button class="ghost-btn">Turno mañana</button>
+                <button class="ghost-btn">Todas las zonas</button>
+              </div>
+            </div>
+            <div class="schedule-wrap">
+              <div class="schedule">
+                <div class="schedule-header">
+                  <div class="unit-col">Zona / Unidad</div>
+                  <div>06–07</div>
+                  <div>07–08</div>
+                  <div>08–09</div>
+                  <div>09–10</div>
+                  <div>10–11</div>
+                  <div>11–12</div>
+                  <div>12–13</div>
+                  <div>13–14</div>
+                </div>
+
+                <div class="schedule-row">
+                  <div class="unit-col"><strong>H-100</strong><span>Horno principal · foco histórico de coactividad</span></div>
+                  <div class="slot"><div class="bar mech" data-modal="retubing">Retubing horno<small>Mecánica · grúa 40T</small></div></div>
+                  <div class="slot"><div class="bar mech" data-modal="retubing">Retubing horno<small>Mecánica · izado</small></div></div>
+                  <div class="slot conflict"><div class="bar hot" data-modal="hotH100">Soldadura carcasa<small>Trabajo en caliente</small></div><div class="conflict-tag">Conflicto crítico</div></div>
+                  <div class="slot conflict"><div class="bar conf" data-modal="confH100">Inspección interna<small>Espacio confinado</small></div><div class="conflict-tag">Misma huella de riesgo</div></div>
+                  <div class="slot"><div class="bar insp" data-modal="pressure">Prueba de presión<small>Inspección</small></div></div>
+                  <div class="slot"><div class="bar insp" data-modal="pressure">Prueba de presión<small>Headers</small></div></div>
+                  <div class="slot"><div class="bar clean" data-modal="cleanup">Limpieza final<small>Cierre de entorno</small></div></div>
+                  <div class="slot"></div>
+                </div>
+
+                <div class="schedule-row">
+                  <div class="unit-col"><strong>Rack Eléctrico Norte</strong><span>Subestación 66kV · LOTO activo</span></div>
+                  <div class="slot"></div>
+                  <div class="slot"><div class="bar elec" data-modal="transformer">Cambio transformador<small>12T · Bahía 3</small></div></div>
+                  <div class="slot"><div class="bar elec" data-modal="transformer">Cambio transformador<small>Ventana eléctrica</small></div></div>
+                  <div class="slot"><div class="bar elec" data-modal="cells">Reconexión celdas<small>Media tensión</small></div></div>
+                  <div class="slot"><div class="bar insp" data-modal="thermo">Termografía<small>Inspección</small></div></div>
+                  <div class="slot"></div>
+                  <div class="slot"></div>
+                  <div class="slot"></div>
+                </div>
+
+                <div class="schedule-row">
+                  <div class="unit-col"><strong>TK-123</strong><span>Tanque crudo · restricción absoluta trabajo en caliente + interior</span></div>
+                  <div class="slot"><div class="bar clean" data-modal="degas">Desgasificación<small>Ventilación forzada</small></div></div>
+                  <div class="slot"><div class="bar clean" data-modal="degas">Desgasificación<small>Preparación de entrada</small></div></div>
+                  <div class="slot"><div class="bar conf" data-modal="tankEntry">Limpieza interior<small>Espacio confinado</small></div></div>
+                  <div class="slot conflict"><div class="bar hot" data-modal="nozzle">Reparación boquilla N3<small>Trabajo en caliente</small></div><div class="conflict-tag">Prohibición operativa</div></div>
+                  <div class="slot"><div class="bar insp" data-modal="weldCheck">Inspección soldadura<small>RX</small></div></div>
+                  <div class="slot"><div class="bar mech" data-modal="manhole">Montaje manhole<small>Cierre mecánico</small></div></div>
+                  <div class="slot"></div>
+                  <div class="slot"></div>
+                </div>
+
+                <div class="schedule-row">
+                  <div class="unit-col"><strong>Pipe Rack Sur</strong><span>Líneas de proceso · radio compartido con otras contratas</span></div>
+                  <div class="slot"></div>
+                  <div class="slot"><div class="bar hot" data-modal="cutting">Corte línea 6”<small>Oxicorte · tramo 4</small></div></div>
+                  <div class="slot"><div class="bar hot" data-modal="weldLine">Soldadura línea<small>Nuevo spool</small></div></div>
+                  <div class="slot"><div class="bar insp" data-modal="rx">Radiografía<small>Control de calidad</small></div></div>
+                  <div class="slot"><div class="bar mech" data-modal="insulation">Aislamiento<small>Tramos 3–5</small></div></div>
+                  <div class="slot"><div class="bar mech" data-modal="insulation">Aislamiento<small>Alta densidad</small></div></div>
+                  <div class="slot"></div>
+                  <div class="slot"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel">
+            <div class="panel-head">
+              <div>
+                <h4>Motor de riesgo y decisión</h4>
+                <p>Prioriza dónde actuar primero y cuantifica el retorno de la reprogramación.</p>
+              </div>
+            </div>
+            <div class="stack">
+              <article class="risk-card">
+                <span class="pill danger">Prioridad 01</span>
+                <h5>H-100 · Superposición de humos y permanencia humana</h5>
+                <p>Permisos válidos individualmente, pero incompatibles en conjunto. Mismo entorno, misma ventana, misma ruta de exposición.</p>
+                <div class="risk-score">
+                  <div class="score-bar"><i style="width: 92%"></i></div>
+                  <div class="score-number">9.2</div>
+                </div>
+              </article>
+              <article class="risk-card">
+                <span class="pill warning">Prioridad 02</span>
+                <h5>TK-123 · Violación de restricción absoluta</h5>
+                <p>La planificación actual permite una condición que debería bloquearse antes de llegar a ejecución. No es alerta: es hard stop.</p>
+                <div class="risk-score">
+                  <div class="score-bar"><i style="width: 100%"></i></div>
+                  <div class="score-number">10.0</div>
+                </div>
+              </article>
+              <article class="risk-card">
+                <span class="pill info">Prioridad 03</span>
+                <h5>Pipe Rack Sur · Densidad y trazabilidad de evacuación</h5>
+                <p>La zona sigue siendo operable, pero la lectura UWB muestra demasiada gente simultánea para un evento dinámico.</p>
+                <div class="risk-score">
+                  <div class="score-bar"><i style="width: 68%"></i></div>
+                  <div class="score-number">6.8</div>
+                </div>
+              </article>
+              <div class="action-row">
+                <button class="primary-btn" id="applyPlan">Aplicar plan recomendado</button>
+                <button class="secondary-btn" id="openLearning">Ver precedentes históricos</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="layout-view" id="view-workforce">
+        <div class="worker-shell">
+          <section class="panel">
+            <div class="worker-hero">
+              <div class="avatar">JL</div>
+              <div>
+                <h4>José Luis Martínez</h4>
+                <p>Tubero · MASA Industrial S.L. · Equipo B3 · Acceso autorizado a H-100 / Taller mecánico</p>
+              </div>
+              <div class="passport">
+                <div class="badge">Briefing completado</div>
+                <div class="badge">EPI verificado</div>
+                <div class="badge" style="background:#fff4e5; color:#9d6210; border-color:#ffe0b2;">1 alerta de zona</div>
+              </div>
+            </div>
+            <div class="timeline-block">
+              <div class="shift-item">
+                <div class="shift-time">06:30–08:00</div>
+                <div class="shift-copy">
+                  <strong>Preparación de andamio · H-100 Nivel 2</strong>
+                  <p>Acceso por escalera oeste, fuera de la zona de exclusión de la grúa. Validar tag verde del andamio antes de trabajar.</p>
+                  <div class="equip-tags"><span>Casco</span><span>Guantes</span><span>Botas S3</span><span>Arnés</span></div>
+                </div>
+                <div class="shift-state">Permiso activo</div>
+              </div>
+              <div class="shift-item">
+                <div class="shift-time">08:15–12:00</div>
+                <div class="shift-copy">
+                  <strong>Corte y preparación de spool · Línea de alimentación H-100</strong>
+                  <p>Trabajo colindante a soldadura de carcasa. Respirador ABE1 obligatorio por arrastre de humos. Ruta de evacuación primaria: punto 3.</p>
+                  <div class="equip-tags"><span>Guante anticorte</span><span>Arnés</span><span>Protección auditiva</span><span>Respirador ABE1</span></div>
+                </div>
+                <div class="shift-state" style="background:#fff1f0; color:#a93e37; border-color:#ffd0cb;">Riesgo elevado</div>
+              </div>
+              <div class="shift-item">
+                <div class="shift-time">12:30–14:00</div>
+                <div class="shift-copy">
+                  <strong>Prefabricación de spool · Taller mecánico, Nave 2</strong>
+                  <p>Actividad de bajo riesgo relativo. Sin interferencias críticas previstas para el cierre del turno.</p>
+                  <div class="equip-tags"><span>Casco</span><span>Guantes</span><span>Gafas</span></div>
+                </div>
+                <div class="shift-state" style="background:#ecfbf4; color:#147a56; border-color:#c5f1de;">Zona segura</div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel briefing">
+            <div>
+              <div class="eyebrow" style="color: #6f7e8a;">Personalized safety briefing</div>
+              <h4>Lo que este operario sí necesita ver</h4>
+            </div>
+            <p>Esta vista no reproduce un dashboard corporativo: filtra el ruido y convierte el plan de parada en instrucciones accionables por persona. Hoy José Luis no necesita 47 tareas; necesita saber qué puede dañarle, cuándo y qué cambia su comportamiento.</p>
+
+            <div class="hazard-list">
+              <div class="hazard-item">
+                <div class="distance red">3 m</div>
+                <div>
+                  <strong>Trabajo en caliente a 3 metros</strong>
+                  <p>Soldadura de carcasa en H-100 entre 08:00 y 10:00. Humos arrastrados hacia su posición por viento NE previsto. Protección respiratoria continua.</p>
+                </div>
+              </div>
+              <div class="hazard-item">
+                <div class="distance amber">12 m</div>
+                <div>
+                  <strong>Izado de carga con grúa 40T</strong>
+                  <p>Zona de exclusión activa hasta las 08:00. No usar acceso norte mientras la maniobra esté abierta.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="quiz">
+              <strong>Verificación rápida</strong>
+              <div class="quiz-options">
+                <label><input type="radio" name="ppe" value="0"> Gafas de soldadura</label>
+                <label><input type="radio" name="ppe" value="1"> Respirador ABE1</label>
+                <label><input type="radio" name="ppe" value="0"> Traje químico completo</label>
+              </div>
+              <button class="primary-btn" id="checkQuiz">Confirmar conocimiento</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="layout-view" id="view-learning">
+        <div class="learning-grid">
+          <section class="panel pattern-panel">
+            <div class="panel-head" style="padding:0 0 18px; border-bottom:none; background:none;">
+              <div>
+                <h4>Learning Engine</h4>
+                <p>El valor real no es archivar incidentes: es reinyectarlos en la planificación futura como reglas operativas.</p>
+              </div>
+            </div>
+
+            <div class="pattern-grid">
+              <div class="pattern-metric">
+                <span>Patrones de coactividad reproducidos hoy</span>
+                <strong id="patternCount">7</strong>
+                <div class="pattern-bar"><i id="patternBar" style="width:70%"></i></div>
+              </div>
+              <div class="pattern-metric">
+                <span>Secuencias similares a near miss</span>
+                <strong>4</strong>
+                <div class="pattern-bar"><i style="width:42%"></i></div>
+              </div>
+              <div class="pattern-metric">
+                <span>Lecciones incorporadas al plan</span>
+                <strong>12</strong>
+                <div class="pattern-bar"><i style="width:82%"></i></div>
+              </div>
+              <div class="pattern-metric">
+                <span>Cobertura de mitigación histórica</span>
+                <strong id="coverageLearning">89%</strong>
+                <div class="pattern-bar"><i id="coverageBar" style="width:89%"></i></div>
+              </div>
+            </div>
+
+            <div class="event-list">
+              <article class="event-item incident">
+                <div class="event-meta"><span>Incidente</span><span>15 Mar 2024 · H-100 · 09:45</span></div>
+                <h5>Exposición a gases de soldadura en entorno confinado</h5>
+                <p>Dos operarios compartieron entorno con soldadura sin protección respiratoria adecuada. La causa raíz no fue técnica, fue de orquestación: permisos válidos por separado que se volvieron inseguros en conjunto.</p>
+                <div class="match-note">Match actual detectado: H-100 · Día 12 · 08:00–10:00. SENTINEL propone mover el trabajo en caliente al turno de tarde.</div>
+              </article>
+              <article class="event-item nearmiss">
+                <div class="event-meta"><span>Near miss</span><span>21 Mar 2024 · TK-123 · 14:10</span></div>
+                <h5>Boquilla soldada con personal todavía dentro del tanque</h5>
+                <p>El vigía detuvo la tarea a tiempo. La enseñanza es simple: esta configuración no genera alerta; debe impedirse desde planificación.</p>
+                <div class="match-note">Match actual detectado: TK-123 · Día 12 · 09:00–10:00. La plataforma la trata como restricción absoluta.</div>
+              </article>
+              <article class="event-item improvement">
+                <div class="event-meta"><span>Mejora</span><span>Abr 2024 · General</span></div>
+                <h5>Límite de densidad en zonas con trabajo en caliente</h5>
+                <p>Se estableció un máximo de 25 personas por radio de 50 metros. La diferencia ahora es que el sistema lo monitoriza con tags UWB y no con conteo manual.</p>
+                <div class="match-note">Aplicado hoy: Pipe Rack Sur y Rack Eléctrico Norte. La redistribución automática de cuadrillas devuelve la zona a un umbral de evacuación controlado.</div>
+              </article>
+            </div>
+          </section>
+
+          <aside class="panel scenario">
+            <div>
+              <div class="eyebrow" style="color:#6f7e8a;">What-if simulation</div>
+              <h4 style="margin:8px 0 0; font-size:24px; letter-spacing:-.03em;">Mover tareas y medir impacto</h4>
+            </div>
+
+            <div class="scenario-box">
+              <h5>Escenario a simular</h5>
+              <p>En lugar de justificar riesgos a posteriori, el usuario ve cómo cambia el perfil histórico si reordena el plan antes de ejecutarlo.</p>
+              <select id="scenarioSelect">
+                <option value="0">Selecciona un escenario…</option>
+                <option value="1">Mover soldadura de H-100 al turno de tarde</option>
+                <option value="2">Secuenciar TK-123: limpieza → boquilla</option>
+                <option value="3">Redistribuir personal de Pipe Rack Sur</option>
+                <option value="4">Aplicar las tres decisiones</option>
+              </select>
+            </div>
+
+            <div class="sim-result">
+              <div class="sim-numbers">
+                <div class="sim-metric">
+                  <span>Antes</span>
+                  <strong>7</strong>
+                </div>
+                <div class="sim-arrow">→</div>
+                <div class="sim-metric">
+                  <span>Después</span>
+                  <strong id="simAfter">—</strong>
+                </div>
+              </div>
+              <div id="simText" style="font-size:13px; color:var(--ink-soft); line-height:1.65;">Selecciona una acción para ver la reducción de patrones históricos, cobertura y riesgo residual.</div>
+            </div>
+
+            <div class="scenario-box">
+              <h5>Lectura para jurado</h5>
+              <p>La demo no se queda en “IA que detecta”. Enseña una cadena completa: detecta, recomienda, simula impacto y modifica el plan con trazabilidad.</p>
+            </div>
+
+            <div class="action-row">
+              <button class="primary-btn" id="applyScenario">Aplicar escenario</button>
+              <button class="secondary-btn" id="backToControl">Volver a Control Center</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h4 id="modalTitle">Trabajo</h4>
+          <p id="modalDescription">Detalle operativo</p>
+        </div>
+        <button class="close" id="closeModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="mini-box"><span>Disciplina</span><strong id="modalType">—</strong></div>
+          <div class="mini-box"><span>Ubicación</span><strong id="modalLocation">—</strong></div>
+          <div class="mini-box"><span>Riesgo</span><strong id="modalRisk">—</strong></div>
+        </div>
+        <div class="modal-note" id="modalNote">—</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const navButtons = document.querySelectorAll('.nav-button');
+    const views = {
+      control: document.getElementById('view-control'),
+      workforce: document.getElementById('view-workforce'),
+      learning: document.getElementById('view-learning')
+    };
+
+    navButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        Object.values(views).forEach(view => view.classList.remove('active'));
+        button.classList.add('active');
+        views[button.dataset.view].classList.add('active');
+      });
+    });
+
+    const toast = document.getElementById('toast');
+    let toastTimer;
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    const taskDetails = {
+      retubing: {
+        title: 'Retubing del horno H-100',
+        description: 'Operación mecánica con izado de tubos mediante grúa de 40 toneladas. Ventana sensible por proximidad con otros equipos y rutas de acceso compartidas.',
+        type: 'Mecánica',
+        location: 'H-100 · Nivel 3',
+        risk: 'Alto',
+        note: 'Requiere exclusión de 15 m, control de interferencias y secuencia clara de entrada para equipos que trabajan por debajo.'
+      },
+      hotH100: {
+        title: 'Soldadura de carcasa H-100',
+        description: 'Trabajo en caliente previsto en la misma envolvente operativa donde existe entrada a espacio confinado y personal colindante.',
+        type: 'Trabajo en caliente',
+        location: 'H-100 · Nivel 2',
+        risk: 'Crítico',
+        note: 'No es un problema del permiso aislado; es un problema de coexistencia temporal. La recomendación óptima es moverlo al turno de tarde.'
+      },
+      confH100: {
+        title: 'Inspección interna H-100',
+        description: 'Entrada a espacio confinado para revisión de refractario y chequeo visual interior.',
+        type: 'Espacio confinado',
+        location: 'H-100 · Interior',
+        risk: 'Crítico',
+        note: 'El riesgo aumenta por la actividad térmica exterior y por la permanencia simultánea de otras cuadrillas en la misma huella funcional.'
+      },
+      pressure: {
+        title: 'Prueba de presión',
+        description: 'Ensayo hidrostático una vez despejada la interferencia principal de la unidad.',
+        type: 'Inspección',
+        location: 'H-100 · Nivel 1',
+        risk: 'Medio',
+        note: 'Puede mantenerse según plan si se ejecuta la reprogramación previa del conflicto crítico.'
+      },
+      cleanup: {
+        title: 'Limpieza de cierre de entorno',
+        description: 'Recogida de materiales y liberación segura del área para transición a siguiente fase.',
+        type: 'Limpieza',
+        location: 'H-100 · General',
+        risk: 'Bajo',
+        note: 'Actividad de cierre recomendada para asegurar housekeeping y trazabilidad de entrega.'
+      },
+      transformer: {
+        title: 'Cambio de transformador',
+        description: 'Izado y sustitución del transformador de la bahía 3 con LOTO activo y ventana eléctrica controlada.',
+        type: 'Eléctrica',
+        location: 'Rack Eléctrico Norte',
+        risk: 'Alto',
+        note: 'No presenta conflicto crítico actual, pero comparte radio de densidad con Pipe Rack Sur en la franja de 07:00 a 09:00.'
+      },
+      cells: {
+        title: 'Reconexión de celdas',
+        description: 'Secuencia controlada de reenergización tras mantenimiento.',
+        type: 'Eléctrica',
+        location: 'Bahías 1–2',
+        risk: 'Medio',
+        note: 'Mantener control de autorizaciones y confirmar cierre de interferencias de contratas adyacentes.'
+      },
+      thermo: {
+        title: 'Termografía de conexiones',
+        description: 'Inspección no invasiva para validar calidad térmica tras reconexión.',
+        type: 'Inspección',
+        location: 'Rack Norte · General',
+        risk: 'Bajo',
+        note: 'Tarea idónea para cierre de ventana eléctrica y generación de evidencia digital.'
+      },
+      degas: {
+        title: 'Desgasificación de TK-123',
+        description: 'Ventilación forzada previa a entrada interior.',
+        type: 'Preparación',
+        location: 'TK-123 · Interior',
+        risk: 'Alto',
+        note: 'Debe garantizarse la calidad de atmósfera antes de cualquier entrada y mantener separación absoluta con futuros trabajos en caliente.'
+      },
+      tankEntry: {
+        title: 'Limpieza interior de TK-123',
+        description: 'Entrada para limpieza de fondos con personal dentro del tanque.',
+        type: 'Espacio confinado',
+        location: 'TK-123 · Interior',
+        risk: 'Alto',
+        note: 'La tarea es viable solo si no existe actividad térmica ni reparación exterior en paralelo.'
+      },
+      nozzle: {
+        title: 'Reparación de boquilla N3',
+        description: 'Soldadura de reparación exterior prevista mientras la planificación original todavía alojaba personal en el interior.',
+        type: 'Trabajo en caliente',
+        location: 'TK-123 · Boquilla N3',
+        risk: 'Crítico',
+        note: 'Configuración prohibida. El sistema debe impedirla y forzar secuenciación: salida interior completa antes de soldar.'
+      },
+      weldCheck: {
+        title: 'Inspección de soldadura',
+        description: 'Control RX una vez finalizada la reparación exterior.',
+        type: 'Inspección',
+        location: 'TK-123 · Exterior',
+        risk: 'Bajo',
+        note: 'Correctamente secuenciada tras la reparación, aporta evidencia de cierre.'
+      },
+      manhole: {
+        title: 'Montaje de manhole',
+        description: 'Cierre mecánico y restitución del tanque.',
+        type: 'Mecánica',
+        location: 'TK-123 · Acceso',
+        risk: 'Bajo',
+        note: 'Tarea final de restitución una vez terminada la inspección y confirmada la liberación completa del interior.'
+      },
+      cutting: {
+        title: 'Corte de línea 6”',
+        description: 'Oxicorte en el tramo 4 del Pipe Rack Sur con múltiples contratas en radio próximo.',
+        type: 'Trabajo en caliente',
+        location: 'Pipe Rack Sur · Tramo 4',
+        risk: 'Alto',
+        note: 'Debe controlarse la densidad de zona y la claridad de rutas de evacuación.'
+      },
+      weldLine: {
+        title: 'Soldadura de línea',
+        description: 'Montaje de nuevo tramo de tubería con secuencia posterior de control radiográfico.',
+        type: 'Trabajo en caliente',
+        location: 'Pipe Rack Sur · Tramo 4',
+        risk: 'Alto',
+        note: 'Aceptable siempre que se reduzca la sobrecarga humana y se mantenga el censo UWB bajo umbral.'
+      },
+      rx: {
+        title: 'Radiografía de soldadura',
+        description: 'Control de calidad posterior al nuevo tramo.',
+        type: 'Inspección',
+        location: 'Pipe Rack Sur',
+        risk: 'Bajo',
+        note: 'Actividad segura si la zona queda ordenada y con censo contenido.'
+      },
+      insulation: {
+        title: 'Aislamiento térmico',
+        description: 'Trabajo mecánico complementario previsto en la misma franja donde se concentra densidad humana.',
+        type: 'Mecánica',
+        location: 'Pipe Rack Sur · Tramos 3–5',
+        risk: 'Medio',
+        note: 'Es la mejor candidata para reubicación espacial inmediata sin penalizar el plan global.'
+      }
+    };
+
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDescription = document.getElementById('modalDescription');
+    const modalType = document.getElementById('modalType');
+    const modalLocation = document.getElementById('modalLocation');
+    const modalRisk = document.getElementById('modalRisk');
+    const modalNote = document.getElementById('modalNote');
+
+    document.querySelectorAll('[data-modal]').forEach(item => {
+      item.addEventListener('click', () => {
+        const data = taskDetails[item.dataset.modal];
+        if (!data) return;
+        modalTitle.textContent = data.title;
+        modalDescription.textContent = data.description;
+        modalType.textContent = data.type;
+        modalLocation.textContent = data.location;
+        modalRisk.textContent = data.risk;
+        modalNote.textContent = data.note;
+        modalBackdrop.classList.add('active');
+      });
+    });
+
+    function closeModal() {
+      modalBackdrop.classList.remove('active');
+    }
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', e => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+
+    document.getElementById('checkQuiz').addEventListener('click', () => {
+      const selected = document.querySelector('input[name="ppe"]:checked');
+      if (!selected) {
+        showToast('Selecciona una opción antes de confirmar.');
+        return;
+      }
+      if (selected.value === '1') {
+        showToast('Correcto. Briefing validado para este operario.');
+      } else {
+        showToast('Incorrecto. El EPI adicional requerido es el respirador ABE1.');
+      }
+    });
+
+    const scenarioSelect = document.getElementById('scenarioSelect');
+    const simAfter = document.getElementById('simAfter');
+    const simText = document.getElementById('simText');
+    const patternCount = document.getElementById('patternCount');
+    const patternBar = document.getElementById('patternBar');
+    const coverageLearning = document.getElementById('coverageLearning');
+    const coverageBar = document.getElementById('coverageBar');
+
+    const scenarios = {
+      '1': {
+        after: '5',
+        patterns: 5,
+        coverage: '91%',
+        coverageWidth: '91%',
+        text: 'Se eliminan 2 patrones de coactividad en H-100. La planificación gana robustez sin comprometer la ruta crítica del turnaround.'
+      },
+      '2': {
+        after: '4',
+        patterns: 4,
+        coverage: '93%',
+        coverageWidth: '93%',
+        text: 'Se elimina la configuración prohibida en TK-123 y desaparecen 3 coincidencias con near misses históricos.'
+      },
+      '3': {
+        after: '6',
+        patterns: 6,
+        coverage: '90%',
+        coverageWidth: '90%',
+        text: 'Se reduce la sobrecarga de zona en Pipe Rack Sur. Impacto moderado pero rápido y casi sin coste operativo.'
+      },
+      '4': {
+        after: '1',
+        patterns: 1,
+        coverage: '97%',
+        coverageWidth: '97%',
+        text: 'La combinación de las tres medidas deja un único patrón residual menor. La demo pasa de detectar a demostrar control real del plan.'
+      }
+    };
+
+    function updateScenario() {
+      const scenario = scenarios[scenarioSelect.value];
+      if (!scenario) {
+        simAfter.textContent = '—';
+        simText.textContent = 'Selecciona una acción para ver la reducción de patrones históricos, cobertura y riesgo residual.';
+        patternCount.textContent = '7';
+        patternBar.style.width = '70%';
+        coverageLearning.textContent = '89%';
+        coverageBar.style.width = '89%';
+        return;
+      }
+      simAfter.textContent = scenario.after;
+      simText.textContent = scenario.text;
+      patternCount.textContent = String(scenario.patterns);
+      patternBar.style.width = `${scenario.patterns * 10}%`;
+      coverageLearning.textContent = scenario.coverage;
+      coverageBar.style.width = scenario.coverageWidth;
+    }
+    scenarioSelect.addEventListener('change', updateScenario);
+
+    function applyOptimization() {
+      document.getElementById('heroConflicts').textContent = '1';
+      document.getElementById('heroRisk').textContent = '86%';
+      document.getElementById('coverageValue').textContent = '97%';
+      patternCount.textContent = '1';
+      patternBar.style.width = '10%';
+      coverageLearning.textContent = '97%';
+      coverageBar.style.width = '97%';
+      showToast('Plan recomendado aplicado. Conflictos críticos reducidos de 3 a 1.');
+    }
+
+    document.getElementById('optimizeAll').addEventListener('click', applyOptimization);
+    document.getElementById('applyPlan').addEventListener('click', applyOptimization);
+    document.getElementById('applyScenario').addEventListener('click', () => {
+      if (!scenarios[scenarioSelect.value]) {
+        showToast('Selecciona primero un escenario de simulación.');
+        return;
+      }
+      applyOptimization();
+    });
+
+    document.getElementById('openLearning').addEventListener('click', () => {
+      navButtons.forEach(btn => btn.classList.remove('active'));
+      document.querySelector('.nav-button[data-view="learning"]').classList.add('active');
+      Object.values(views).forEach(view => view.classList.remove('active'));
+      views.learning.classList.add('active');
+      showToast('Abriendo precedentes históricos vinculados a la planificación actual.');
+    });
+
+    document.getElementById('backToControl').addEventListener('click', () => {
+      navButtons.forEach(btn => btn.classList.remove('active'));
+      document.querySelector('.nav-button[data-view="control"]').classList.add('active');
+      Object.values(views).forEach(view => view.classList.remove('active'));
+      views.control.classList.add('active');
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>
