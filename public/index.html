@@ -191,75 +191,117 @@
   .semaphore.yellow .sem-title { color: #a56800; }
   .semaphore.green .sem-title { color: var(--success); }
 
-  /* Radar */
-  .radar-section { margin: 0 16px 14px; }
-  .radar-map {
-    position: relative; width: 100%; aspect-ratio: 1;
-    background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(242,246,250,.92));
-    border: 1px solid var(--line); border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg); overflow: hidden;
+  /* Plant Map */
+  .map-section { margin: 0 16px 14px; }
+  .plant-map-container {
+    position: relative; width: 100%; overflow: hidden;
+    border-radius: var(--radius-xl); border: 1px solid var(--line);
+    box-shadow: var(--shadow-lg);
   }
-  .radar-map::before {
-    content: ''; position: absolute; inset: 0;
-    background:
-      radial-gradient(circle at 50% 50%, transparent 18%, rgba(12,141,231,.04) 19%, transparent 20%,
-                      transparent 38%, rgba(12,141,231,.04) 39%, transparent 40%,
-                      transparent 58%, rgba(12,141,231,.04) 59%, transparent 60%);
+  .plant-map-img {
+    width: 100%; display: block; pointer-events: none;
+    user-select: none; -webkit-user-select: none;
   }
-  .radar-map::after {
-    content: ''; position: absolute; inset: 0;
-    background:
-      linear-gradient(0deg, transparent 49.5%, rgba(12,141,231,.04) 50%, transparent 50.5%),
-      linear-gradient(90deg, transparent 49.5%, rgba(12,141,231,.04) 50%, transparent 50.5%);
+  .map-svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    z-index: 5; pointer-events: none;
   }
-  .radar-center {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    width: 44px; height: 44px; border-radius: 50%;
-    background: var(--gradient-brand); display: flex; align-items: center; justify-content: center;
-    font-size: 18px; z-index: 10;
-    box-shadow: 0 8px 28px rgba(12,141,231,.3);
-    animation: centerGlow 3s infinite ease-in-out;
+  .user-gps-dot {
+    position: absolute; z-index: 20; transform: translate(-50%, -50%);
+    transition: left .8s ease, top .8s ease;
   }
-  @keyframes centerGlow {
-    0%,100%{box-shadow:0 8px 20px rgba(12,141,231,.25)} 50%{box-shadow:0 8px 40px rgba(12,141,231,.45)}
+  .gps-accuracy {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    border-radius: 50%; background: rgba(12,141,231,.1);
+    border: 1px solid rgba(12,141,231,.2);
+    width: 50px; height: 50px;
+    animation: gpsPulse 3s infinite ease-in-out;
   }
-  .ring-label {
-    position: absolute; font-size: 9px; color: var(--ink-faint); font-weight: 700;
-    background: rgba(255,255,255,.8); padding: 2px 6px; border-radius: 4px; z-index: 2;
+  @keyframes gpsPulse {
+    0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6} 50%{transform:translate(-50%,-50%) scale(1.4);opacity:.25}
+  }
+  .gps-dot-inner {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--gradient-brand);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; position: relative; z-index: 2;
+    box-shadow: 0 4px 16px rgba(12,141,231,.35);
+    border: 3px solid white;
+  }
+  .gps-badge {
+    position: absolute; top: 8px; right: 8px; z-index: 15;
+    font-size: 9px; font-weight: 800; padding: 4px 9px;
+    border-radius: 999px; background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px); color: var(--blue);
+    border: 1px solid rgba(12,141,231,.15);
+    box-shadow: var(--shadow-sm);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .gps-badge .gps-live {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success); animation: pulse 2.4s infinite;
+  }
+  .muster-marker {
+    position: absolute; z-index: 12; transform: translate(-50%, -50%);
+    display: none; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .muster-marker-inner {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(31,155,111,.15); border: 3px solid var(--success);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; animation: musterPulse 2s infinite;
+  }
+  @keyframes musterPulse { 0%,100%{box-shadow:0 0 8px rgba(31,155,111,.15)} 50%{box-shadow:0 0 24px rgba(31,155,111,.35)} }
+  .muster-label-text {
+    font-size: 8px; font-weight: 900; color: var(--success);
+    background: rgba(255,255,255,.92); padding: 2px 6px; border-radius: 4px;
+    text-align: center; border: 1px solid rgba(31,155,111,.2);
+    white-space: nowrap;
+  }
+  .escape-dist-badge {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 15; font-size: 11px; font-weight: 900; padding: 6px 14px;
+    border-radius: 999px; background: rgba(31,155,111,.92); color: white;
+    box-shadow: 0 6px 20px rgba(31,155,111,.3); backdrop-filter: blur(8px);
+    display: none; white-space: nowrap;
   }
 
-  /* Hazard blips */
+  /* Hazard blips (on map) */
   .hazard-blip {
-    position: absolute; z-index: 5; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-    transition: transform .15s;
+    position: absolute; z-index: 10; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    transform: translate(-50%, -50%); transition: transform .15s;
   }
-  .hazard-blip:active { transform: scale(1.12); }
+  .hazard-blip:active { transform: translate(-50%, -50%) scale(1.15); }
   .blip-icon {
-    width: 38px; height: 38px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 800;
-    box-shadow: var(--shadow-sm);
+    font-size: 13px; font-weight: 800;
+    box-shadow: var(--shadow-sm); border: 2px solid white;
   }
-  .blip-icon.hot { background: rgba(219,74,67,.12); border: 2px solid var(--danger); animation: blipRed 2s infinite; }
-  .blip-icon.crane { background: rgba(255,178,74,.12); border: 2px solid var(--amber); animation: blipAmber 2.5s infinite; }
-  .blip-icon.confined { background: rgba(210,137,255,.12); border: 2px solid var(--violet); }
-  .blip-icon.team { background: rgba(12,141,231,.1); border: 2px solid var(--blue); }
-  @keyframes blipRed { 0%,100%{box-shadow:0 0 8px rgba(219,74,67,.2)} 50%{box-shadow:0 0 22px rgba(219,74,67,.4)} }
-  @keyframes blipAmber { 0%,100%{box-shadow:0 0 6px rgba(255,178,74,.15)} 50%{box-shadow:0 0 18px rgba(255,178,74,.35)} }
+  .blip-icon.hot { background: rgba(219,74,67,.88); color: white; animation: blipRed 2s infinite; }
+  .blip-icon.crane { background: rgba(255,178,74,.92); color: white; animation: blipAmber 2.5s infinite; }
+  .blip-icon.confined { background: rgba(210,137,255,.88); color: white; }
+  .blip-icon.team { background: rgba(12,141,231,.88); color: white; }
+  @keyframes blipRed { 0%,100%{box-shadow:0 0 6px rgba(219,74,67,.25)} 50%{box-shadow:0 0 18px rgba(219,74,67,.5)} }
+  @keyframes blipAmber { 0%,100%{box-shadow:0 0 5px rgba(255,178,74,.2)} 50%{box-shadow:0 0 16px rgba(255,178,74,.4)} }
   .blip-label {
-    font-size: 9px; font-weight: 800; color: var(--ink-soft);
-    background: rgba(255,255,255,.9); padding: 2px 7px; border-radius: 6px;
-    white-space: nowrap; border: 1px solid var(--line);
+    font-size: 7px; font-weight: 800; color: white;
+    background: rgba(15,31,49,.7); padding: 1px 5px; border-radius: 4px;
+    white-space: nowrap; backdrop-filter: blur(4px);
   }
 
   .loto-strip {
-    position: absolute; bottom: 12px; left: 12px; right: 12px; z-index: 5;
-    background: rgba(210,137,255,.08); border: 1px solid rgba(210,137,255,.25);
-    border-radius: var(--radius-sm); padding: 8px 12px;
-    font-size: 10px; color: #7c3aed; font-weight: 800;
-    display: flex; align-items: center; gap: 7px;
+    position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 15;
+    background: rgba(210,137,255,.12); border: 1px solid rgba(210,137,255,.3);
+    border-radius: var(--radius-sm); padding: 7px 10px;
+    font-size: 9px; color: #7c3aed; font-weight: 800;
+    display: flex; align-items: center; gap: 6px;
     backdrop-filter: blur(8px);
+  }
+  .escape-active .escape-bar {
+    border-color: var(--blue);
+    background: linear-gradient(135deg, rgba(12,141,231,.08), rgba(149,239,186,.1));
   }
 
   /* Hazard list */
@@ -702,17 +744,27 @@
     </div>
   </div>
 
-  <div class="radar-section">
-    <div class="section-label">📡 Radar de riesgo — <span id="radarZone">cargando</span></div>
-    <div class="radar-map" id="radarMap">
-      <div class="radar-ring" style="width:40%;height:40%;top:30%;left:30%;position:absolute;border-radius:50%;border:1px dashed rgba(12,141,231,.1);"></div>
-      <div class="radar-ring" style="width:70%;height:70%;top:15%;left:15%;position:absolute;border-radius:50%;border:1px dashed rgba(12,141,231,.08);"></div>
-      <span class="ring-label" style="top:29%;left:52%;">10m</span>
-      <span class="ring-label" style="top:14%;left:52%;">25m</span>
-      <span class="ring-label" style="top:0;left:52%;">50m</span>
-      <div class="radar-center">👷</div>
+  <div class="map-section">
+    <div class="section-label">📡 Mapa de planta — <span id="radarZone">cargando</span></div>
+    <div class="plant-map-container" id="plantMap">
+      <img src="/map/planta.png" class="plant-map-img" alt="Complejo San Roque" draggable="false">
+      <svg class="map-svg" id="mapSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polyline id="escapePath" fill="none" stroke="#0c8de7" stroke-width="0.7" stroke-dasharray="1.8,1.2" stroke-linecap="round" opacity="0">
+          <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="2s" repeatCount="indefinite"/>
+        </polyline>
+      </svg>
       <div id="radarBlips"></div>
+      <div class="user-gps-dot" id="userDot" style="left:34%;top:30%;">
+        <div class="gps-accuracy" id="gpsAccuracy"></div>
+        <div class="gps-dot-inner">👷</div>
+      </div>
+      <div class="muster-marker" id="musterMarker">
+        <div class="muster-marker-inner">🏁</div>
+        <div class="muster-label-text" id="musterLabel">Punto reunión</div>
+      </div>
+      <div class="escape-dist-badge" id="escapeDistBadge"></div>
       <div class="loto-strip" id="lotoStrip" style="display:none;"></div>
+      <div class="gps-badge" id="gpsBadge"><div class="gps-live"></div> <span id="gpsText">GPS</span></div>
     </div>
   </div>
 
@@ -797,8 +849,8 @@
     <div style="padding:16px 20px 10px;">
       <div class="section-label" style="margin:0;">Mapa de calor — Densidad y riesgo</div>
     </div>
-    <div class="heatmap" id="heatmap">
-      <div class="plant-grid"></div>
+    <div class="heatmap" id="heatmap" style="position:relative;">
+      <img src="/map/planta.png" style="width:100%;display:block;opacity:.85;" alt="Planta" draggable="false">
     </div>
   </div>
 
@@ -843,6 +895,108 @@
 <script>
 const WORKER_CODE = 'JL';
 const BASE = '';
+
+// ── GPS & Map ──
+const MAP_BOUNDS = { north: 36.1982, south: 36.1918, west: -5.3886, east: -5.3774 };
+let currentPos = { lat: 36.1963, lng: -5.3848 }; // default at H-100
+let gpsWatchId = null;
+let escapeRouteActive = false;
+let escapeWaypoints = [];
+let musterPoint = null;
+let simMode = true;
+let simInterval = null;
+
+function gpsToPercent(lat, lng) {
+  const x = (lng - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west) * 100;
+  const y = (MAP_BOUNDS.north - lat) / (MAP_BOUNDS.north - MAP_BOUNDS.south) * 100;
+  return { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) };
+}
+
+function haversineDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateUserDot() {
+  const pos = gpsToPercent(currentPos.lat, currentPos.lng);
+  const dot = document.getElementById('userDot');
+  dot.style.left = pos.x + '%';
+  dot.style.top = pos.y + '%';
+  if (escapeRouteActive) updateEscapePath();
+}
+
+function initGeolocation() {
+  if (!navigator.geolocation) {
+    document.getElementById('gpsText').textContent = 'Simulado';
+    return;
+  }
+  gpsWatchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const { latitude, longitude, accuracy } = position.coords;
+      if (latitude >= MAP_BOUNDS.south && latitude <= MAP_BOUNDS.north &&
+          longitude >= MAP_BOUNDS.west && longitude <= MAP_BOUNDS.east) {
+        currentPos = { lat: latitude, lng: longitude };
+        simMode = false;
+        document.getElementById('gpsText').textContent = '\u00b1' + Math.round(accuracy) + 'm';
+        const accEl = document.getElementById('gpsAccuracy');
+        const accPx = Math.min(100, Math.max(30, accuracy * 3));
+        accEl.style.width = accPx + 'px';
+        accEl.style.height = accPx + 'px';
+      } else {
+        simMode = true;
+        document.getElementById('gpsText').textContent = 'Demo';
+      }
+      updateUserDot();
+    },
+    () => {
+      simMode = true;
+      document.getElementById('gpsText').textContent = 'Demo';
+    },
+    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+  );
+}
+
+function updateEscapePath() {
+  if (!escapeRouteActive || !musterPoint) return;
+  const userPct = gpsToPercent(currentPos.lat, currentPos.lng);
+  const points = [userPct];
+  escapeWaypoints.forEach(wp => points.push(gpsToPercent(wp[0], wp[1])));
+  points.push(gpsToPercent(musterPoint.lat, musterPoint.lng));
+  const pathStr = points.map(p => p.x + ',' + p.y).join(' ');
+  const pathEl = document.getElementById('escapePath');
+  pathEl.setAttribute('points', pathStr);
+  pathEl.setAttribute('opacity', '1');
+  const dist = haversineDistance(currentPos.lat, currentPos.lng, musterPoint.lat, musterPoint.lng);
+  const badge = document.getElementById('escapeDistBadge');
+  badge.textContent = '\ud83c\udfc1 ' + Math.round(dist) + 'm \u2192 ' + musterPoint.name;
+  badge.style.display = 'block';
+}
+
+function simulateWalk() {
+  if (simInterval) clearInterval(simInterval);
+  const fullPath = [[currentPos.lat, currentPos.lng], ...escapeWaypoints, [musterPoint.lat, musterPoint.lng]];
+  let step = 0;
+  const stepsPerSeg = 25;
+  const totalSteps = (fullPath.length - 1) * stepsPerSeg;
+  simInterval = setInterval(() => {
+    if (!escapeRouteActive || step >= totalSteps) {
+      clearInterval(simInterval); simInterval = null;
+      if (step >= totalSteps && escapeRouteActive) showToast('\ud83c\udfc1 Has llegado al punto de reuni\u00f3n');
+      return;
+    }
+    const seg = Math.floor(step / stepsPerSeg);
+    const t = (step % stepsPerSeg) / stepsPerSeg;
+    if (seg < fullPath.length - 1) {
+      currentPos.lat = fullPath[seg][0] + t * (fullPath[seg+1][0] - fullPath[seg][0]);
+      currentPos.lng = fullPath[seg][1] + t * (fullPath[seg+1][1] - fullPath[seg][1]);
+      updateUserDot();
+    }
+    step++;
+  }, 250);
+}
 
 // ── Helpers ──
 async function api(path, opts) {
@@ -897,38 +1051,35 @@ async function loadZoneScreen() {
   const blipsEl = document.getElementById('radarBlips');
   const listEl = document.getElementById('hazardList');
 
-  // Radar zone label
-  document.getElementById('radarZone').textContent = 'H-100 Nivel 2';
+  document.getElementById('radarZone').textContent = 'Complejo San Roque';
 
-  // Clear previous
   blipsEl.innerHTML = '';
   listEl.innerHTML = '<div class="section-label">Riesgos cerca de ti ahora</div>';
 
   const typeIcons = { hot_work: '🔥', crane: '🏗️', confined_space: '⛔', electrical: '⚡', team: '👥' };
   const typeClasses = { hot_work: 'hot', crane: 'crane', confined_space: 'confined', electrical: 'confined', team: 'team' };
-  const blipPositions = [
-    {top:'26%',left:'68%'}, {top:'14%',left:'44%'}, {top:'55%',left:'12%'}, {top:'68%',left:'72%'}
-  ];
 
-  hazards.forEach((h, i) => {
-    const pos = blipPositions[i] || {top:'40%',left:'70%'};
+  hazards.forEach((h) => {
     const cls = typeClasses[h.type] || 'team';
     const icon = typeIcons[h.type] || '⚠';
 
-    // Radar blip
-    const blip = document.createElement('div');
-    blip.className = 'hazard-blip';
-    blip.style.top = pos.top;
-    blip.style.left = pos.left;
-    blip.onclick = () => openHazardModal(h);
-    blip.innerHTML = `<div class="blip-icon ${cls}">${icon}</div><div class="blip-label">${h.distance_m}m · ${h.direction}</div>`;
-    blipsEl.appendChild(blip);
+    // Position blip on map using GPS coordinates
+    if (h.lat && h.lng) {
+      const pos = gpsToPercent(h.lat, h.lng);
+      const blip = document.createElement('div');
+      blip.className = 'hazard-blip';
+      blip.style.left = pos.x + '%';
+      blip.style.top = pos.y + '%';
+      blip.onclick = () => openHazardModal(h);
+      blip.innerHTML = '<div class="blip-icon ' + cls + '">' + icon + '</div><div class="blip-label">' + h.distance_m + 'm · ' + h.direction + '</div>';
+      blipsEl.appendChild(blip);
+    }
 
     // LOTO strip
     if (h.type === 'electrical') {
       const loto = document.getElementById('lotoStrip');
       loto.style.display = 'flex';
-      loto.innerHTML = `⚡ ${h.title} — ${h.action_required}`;
+      loto.innerHTML = '⚡ ' + h.title + ' — ' + h.action_required;
       return;
     }
 
@@ -959,9 +1110,12 @@ async function loadZoneScreen() {
   const routes = await api('/api/escape/1');
   if (routes.length > 0) {
     const r = routes[0];
-    document.getElementById('escTitle').textContent = `${r.muster_point} — ${r.distance_m}m`;
+    document.getElementById('escTitle').textContent = r.muster_point + ' — ' + r.distance_m + 'm';
     document.getElementById('escSub').textContent = r.route_description + (r.route_clear ? ' · Ruta libre ✓' : ' · ⚠ Verificar ruta');
   }
+
+  // Position user dot
+  updateUserDot();
 }
 
 function openHazardModal(h) {
@@ -994,11 +1148,40 @@ function showSemaphoreDetail() {
 }
 
 function showEscapeRoute() {
-  api('/api/escape/1').then(routes => {
-    if (routes.length === 0) return showToast('Sin rutas disponibles');
-    const r = routes[0];
-    showToast(`Ruta: ${r.route_description} (${r.distance_m}m)`);
-  });
+  escapeRouteActive = !escapeRouteActive;
+  const screen = document.getElementById('screen-zone');
+  if (escapeRouteActive) {
+    screen.classList.add('escape-active');
+    api('/api/escape/1').then(routes => {
+      if (!routes.length) { showToast('Sin rutas disponibles'); escapeRouteActive = false; return; }
+      const r = routes[0];
+      musterPoint = { lat: r.dest_lat, lng: r.dest_lng, name: r.muster_point };
+      escapeWaypoints = r.waypoints ? JSON.parse(r.waypoints) : [];
+      // Show muster marker
+      const mPos = gpsToPercent(musterPoint.lat, musterPoint.lng);
+      const mm = document.getElementById('musterMarker');
+      mm.style.left = mPos.x + '%';
+      mm.style.top = mPos.y + '%';
+      mm.style.display = 'flex';
+      document.getElementById('musterLabel').textContent = musterPoint.name;
+      updateEscapePath();
+      showToast('🏁 Ruta de evacuación activada — sigue la línea azul');
+      // Scroll map into view
+      document.getElementById('plantMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Simulate walking in demo mode
+      if (simMode) setTimeout(() => simulateWalk(), 2500);
+    });
+  } else {
+    screen.classList.remove('escape-active');
+    document.getElementById('musterMarker').style.display = 'none';
+    document.getElementById('escapeDistBadge').style.display = 'none';
+    document.getElementById('escapePath').setAttribute('opacity', '0');
+    if (simInterval) { clearInterval(simInterval); simInterval = null; }
+    // Reset position to H-100
+    currentPos = { lat: 36.1963, lng: -5.3848 };
+    updateUserDot();
+    showToast('Ruta de evacuación desactivada');
+  }
 }
 
 // ── SCREEN 2: MI TAREA ──
@@ -1190,22 +1373,14 @@ async function loadSupervisor() {
   const heatmap = document.getElementById('heatmap');
   // Remove old zones
   heatmap.querySelectorAll('.heat-zone').forEach(z => z.remove());
-  const zonePositions = {
-    'H-100': {top:'15%',left:'15%',w:80,h:80},
-    'RACK-N': {top:'10%',left:'60%',w:65,h:65},
-    'TK-123': {top:'50%',left:'65%',w:75,h:75},
-    'C-201': {top:'55%',left:'25%',w:60,h:60},
-    'PIPE-S': {top:'82%',left:'35%',w:90,h:55},
-    'TALLER': {top:'82%',left:'80%',w:50,h:50}
-  };
   dash.zones.forEach(z => {
-    const pos = zonePositions[z.code] || {top:'50%',left:'50%',w:60,h:60};
+    const pos = z.lat && z.lng ? gpsToPercent(z.lat, z.lng) : { x: z.pos_x, y: z.pos_y };
     const cls = z.risk_level === 'critical' ? 'critical' : z.risk_level === 'warning' ? 'warning' : 'low';
     const zone = document.createElement('div');
     zone.className = 'heat-zone ' + cls;
-    zone.style.cssText = `width:${pos.w}px;height:${pos.h}px;top:${pos.top};left:${pos.left};${pos.w>pos.h?'border-radius:28px':''}`;
-    zone.onclick = () => showToast(`${z.name}: ${z.current_people} personas · Riesgo ${z.risk_level.toUpperCase()}`);
-    zone.innerHTML = `<div class="hz-label">${z.code}</div><div class="hz-count">${z.current_people}</div>`;
+    zone.style.cssText = 'width:60px;height:60px;top:' + pos.y + '%;left:' + pos.x + '%;transform:translate(-50%,-50%);';
+    zone.onclick = () => showToast(z.name + ': ' + z.current_people + ' personas · Riesgo ' + z.risk_level.toUpperCase());
+    zone.innerHTML = '<div class="hz-label">' + z.code + '</div><div class="hz-count">' + z.current_people + '</div>';
     heatmap.appendChild(zone);
   });
 
@@ -1280,6 +1455,7 @@ document.addEventListener('keydown', e => {
 async function init() {
   await loadWorker();
   await loadZoneScreen();
+  initGeolocation();
 }
 init();
 </script>

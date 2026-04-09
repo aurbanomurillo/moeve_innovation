@@ -44,6 +44,8 @@ db.exec(`
     max_capacity INTEGER DEFAULT 25,
     current_people INTEGER DEFAULT 0,
     risk_level TEXT DEFAULT 'low',
+    lat REAL,
+    lng REAL,
     pos_x REAL DEFAULT 50,
     pos_y REAL DEFAULT 50
   );
@@ -78,6 +80,8 @@ db.exec(`
     company TEXT,
     start_time TEXT,
     end_time TEXT,
+    lat REAL,
+    lng REAL,
     active INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now'))
   );
@@ -126,7 +130,10 @@ db.exec(`
     muster_point TEXT NOT NULL,
     distance_m INTEGER,
     route_description TEXT,
-    route_clear INTEGER DEFAULT 1
+    route_clear INTEGER DEFAULT 1,
+    dest_lat REAL,
+    dest_lng REAL,
+    waypoints TEXT
   );
 
   CREATE TABLE IF NOT EXISTS semaphore_state (
@@ -141,14 +148,14 @@ db.exec(`
 // ── Seed data ──
 const workerCount = db.prepare('SELECT COUNT(*) as c FROM workers').get().c;
 if (workerCount === 0) {
-  // Zones
-  const insertZone = db.prepare('INSERT INTO zones (code, name, description, max_capacity, current_people, risk_level, pos_x, pos_y) VALUES (?,?,?,?,?,?,?,?)');
-  insertZone.run('H-100', 'Horno H-100', 'Horno principal — Niveles 1-3', 30, 24, 'critical', 25, 25);
-  insertZone.run('RACK-N', 'Rack Eléctrico Norte', 'Subestación 66kV — Bahías 1-4', 15, 12, 'warning', 65, 15);
-  insertZone.run('TK-123', 'Tanque TK-123', 'Almacenamiento crudo — Interior y boquillas', 10, 8, 'critical', 70, 55);
-  insertZone.run('C-201', 'Columna C-201', 'Destilación atmosférica — Niveles 3-8', 20, 14, 'low', 30, 60);
-  insertZone.run('PIPE-S', 'Pipe Rack Sur', 'Líneas de proceso — Tramos 3-6', 25, 18, 'warning', 45, 85);
-  insertZone.run('TALLER', 'Taller Mecánico', 'Nave 2 — Prefabricación', 40, 6, 'low', 82, 82);
+  // Zones (with GPS coords for San Roque refinery)
+  const insertZone = db.prepare('INSERT INTO zones (code, name, description, max_capacity, current_people, risk_level, lat, lng, pos_x, pos_y) VALUES (?,?,?,?,?,?,?,?,?,?)');
+  insertZone.run('H-100', 'Horno H-100', 'Horno principal — Niveles 1-3', 30, 24, 'critical', 36.1965, -5.3848, 34, 27);
+  insertZone.run('RACK-N', 'Rack Eléctrico Norte', 'Subestación 66kV — Bahías 1-4', 15, 12, 'warning', 36.1970, -5.3817, 62, 18);
+  insertZone.run('TK-123', 'Tanque TK-123', 'Almacenamiento crudo — Interior y boquillas', 10, 8, 'critical', 36.1953, -5.3811, 67, 45);
+  insertZone.run('C-201', 'Columna C-201', 'Destilación atmosférica — Niveles 3-8', 20, 14, 'low', 36.1960, -5.3830, 50, 35);
+  insertZone.run('PIPE-S', 'Pipe Rack Sur', 'Líneas de proceso — Tramos 3-6', 25, 18, 'warning', 36.1940, -5.3839, 42, 65);
+  insertZone.run('TALLER', 'Taller Mecánico', 'Nave 2 — Prefabricación', 40, 6, 'low', 36.1951, -5.3852, 30, 48);
 
   // Workers
   const insertWorker = db.prepare('INSERT INTO workers (code, name, role, company, team, current_zone, pos_x, pos_y, briefing_completed, epi_verified) VALUES (?,?,?,?,?,?,?,?,?,?)');
@@ -174,15 +181,19 @@ if (workerCount === 0) {
     JSON.stringify([]),
     'Trabajo de taller sin riesgos especiales.');
 
-  // Hazards
-  const insertHazard = db.prepare('INSERT INTO hazards (type, title, description, zone_id, distance_m, direction, severity, action_required, company, start_time, end_time) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
-  insertHazard.run('hot_work', 'Soldadura TIG — Carcasa horno', 'Gases Cr⁶⁺/Mn. Viento NE 12km/h → dispersión hacia posición de trabajo. Radiación UV — no mirar arco sin protección.', 1, 8, 'NE ↗', 'high', 'Respirador ABE1 obligatorio entre 08:00–10:00. Si hueles gas → evacúa por escalera oeste, radio canal 7.', 'Técnicas Reunidas', '08:00', '10:00');
-  insertHazard.run('crane', 'Izado tubos — Grúa 40T', 'Zona exclusión 15m activa. Nivel 3 bloqueado hasta finalización.', 1, 15, 'N ↑', 'high', 'No subir a Nivel 3 ni usar escalera norte hasta 08:15.', 'Grúas del Sur', '06:00', '08:15');
-  insertHazard.run('confined_space', 'Espacio confinado — Interior horno', 'Vigía activo. Atmósfera monitorizada: O₂ 20.9%, LEL 0%, H₂S 0 ppm.', 1, 22, 'O ←', 'low', 'Sin interferencia con tu tarea. Si escuchas alarma de gas desde interior → no acercarte, radio canal 7.', 'MASA Industrial', '08:00', '12:00');
-  insertHazard.run('electrical', 'Línea 6" aislada (LOTO #4812)', 'Bloqueo activo verificado. No retirar barrera ni candado bajo ningún concepto.', 1, 0, '—', 'info', 'No retirar barrera.', 'MASA Industrial', '06:00', '14:00');
+  // Hazards (with GPS positions)
+  const insertHazard = db.prepare('INSERT INTO hazards (type, title, description, zone_id, distance_m, direction, severity, action_required, company, start_time, end_time, lat, lng) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+  insertHazard.run('hot_work', 'Soldadura TIG — Carcasa horno', 'Gases Cr⁶⁺/Mn. Viento NE 12km/h → dispersión hacia posición de trabajo. Radiación UV — no mirar arco sin protección.', 1, 8, 'NE ↗', 'high', 'Respirador ABE1 obligatorio entre 08:00–10:00. Si hueles gas → evacúa por escalera oeste, radio canal 7.', 'Técnicas Reunidas', '08:00', '10:00', 36.1968, -5.3843);
+  insertHazard.run('crane', 'Izado tubos — Grúa 40T', 'Zona exclusión 15m activa. Nivel 3 bloqueado hasta finalización.', 1, 15, 'N ↑', 'high', 'No subir a Nivel 3 ni usar escalera norte hasta 08:15.', 'Grúas del Sur', '06:00', '08:15', 36.1972, -5.3848);
+  insertHazard.run('confined_space', 'Espacio confinado — Interior horno', 'Vigía activo. Atmósfera monitorizada: O₂ 20.9%, LEL 0%, H₂S 0 ppm.', 1, 22, 'O ←', 'low', 'Sin interferencia con tu tarea. Si escuchas alarma de gas desde interior → no acercarte, radio canal 7.', 'MASA Industrial', '08:00', '12:00', 36.1965, -5.3858);
+  insertHazard.run('electrical', 'Línea 6" aislada (LOTO #4812)', 'Bloqueo activo verificado. No retirar barrera ni candado bajo ningún concepto.', 1, 0, '—', 'info', 'No retirar barrera.', 'MASA Industrial', '06:00', '14:00', 36.1965, -5.3848);
 
-  // Escape route
-  db.prepare('INSERT INTO escape_routes (zone_id, muster_point, distance_m, route_description, route_clear) VALUES (?,?,?,?,?)').run(1, 'Punto de reunión 3', 120, 'Escalera Oeste → Pasarela B → Punto reunión 3', 1);
+  // Escape route (with GPS waypoints)
+  db.prepare('INSERT INTO escape_routes (zone_id, muster_point, distance_m, route_description, route_clear, dest_lat, dest_lng, waypoints) VALUES (?,?,?,?,?,?,?,?)').run(
+    1, 'Punto de reunión 3', 120, 'Escalera Oeste → Pasarela B → Punto reunión 3', 1,
+    36.1929, -5.3843,
+    JSON.stringify([[36.1961,-5.3852],[36.1953,-5.3852],[36.1945,-5.3850],[36.1938,-5.3845]])
+  );
 
   // Semaphore
   db.prepare('INSERT INTO semaphore_state (id, level, title, subtitle) VALUES (1, ?, ?, ?)').run('yellow', 'PRECAUCIÓN — 2 riesgos activos en tu zona', 'Hot work a 8m · Izado a 15m');
@@ -351,6 +362,15 @@ app.put('/api/simops/:id/resolve', (req, res) => {
 app.get('/api/escape/:zone_id', (req, res) => {
   const routes = db.prepare('SELECT * FROM escape_routes WHERE zone_id = ?').all(req.params.zone_id);
   res.json(routes);
+});
+
+// Map configuration (GPS bounds for the plant image)
+app.get('/api/map-config', (req, res) => {
+  res.json({
+    bounds: { north: 36.1982, south: 36.1918, west: -5.3886, east: -5.3774 },
+    defaultPosition: { lat: 36.1963, lng: -5.3848 },
+    image: '/map/planta.png'
+  });
 });
 
 // Lessons learned
