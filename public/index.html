@@ -5,2198 +5,326 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>SENTINEL — Copiloto de Seguridad en Campo</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #eef3f7;
-    --shell: #f7fafc;
-    --panel: #ffffff;
-    --panel-2: #f2f6fa;
-    --ink: #122334;
-    --ink-soft: #5f6f7e;
-    --ink-faint: #8a99a7;
-    --line: #d8e3ec;
-    --navy: #102033;
-    --navy-2: #16283d;
-    --blue: #0c8de7;
-    --blue-2: #4bc7ff;
-    --mint: #95efba;
-    --lime: #dfff67;
-    --violet: #d289ff;
-    --rose: #ff87a5;
-    --coral: #ff7b73;
-    --amber: #ffb24a;
-    --danger: #db4a43;
-    --success: #1f9b6f;
-    --gradient-brand: linear-gradient(135deg, #0c8de7 0%, #88eeb9 56%, #d289ff 100%);
-    --gradient-hero: linear-gradient(135deg, #0f2033 0%, #123554 42%, #0c8de7 100%);
-    --shadow-xl: 0 30px 80px rgba(15, 31, 49, .16);
-    --shadow-lg: 0 18px 40px rgba(15, 31, 49, .10);
-    --shadow-md: 0 10px 22px rgba(15, 31, 49, .08);
-    --shadow-sm: 0 4px 12px rgba(15, 31, 49, .06);
-    --radius-xl: 28px;
-    --radius-lg: 22px;
-    --radius-md: 16px;
-    --radius-sm: 12px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body {
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-    background:
-      radial-gradient(circle at top left, rgba(76, 199, 255, .14), transparent 24%),
-      radial-gradient(circle at top right, rgba(149, 239, 186, .14), transparent 20%),
-      linear-gradient(180deg, #f6fafc 0%, #edf3f7 100%);
-    color: var(--ink);
-    max-width: 440px; margin: 0 auto;
-    min-height: 100vh; position: relative;
-    overflow-x: hidden;
-  }
-
-  /* ── HEADER ── */
-  .app-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 20px 16px;
-    padding-top: calc(env(safe-area-inset-top, 14px) + 8px);
-  }
-  .brand-area { display: flex; align-items: center; gap: 12px; }
-  .brand-mark {
-    width: 36px; height: 36px; border-radius: 12px;
-    background: var(--gradient-brand); position: relative;
-    box-shadow: 0 8px 22px rgba(76, 199, 255, .2);
-    overflow: hidden;
-  }
-  .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
-  .brand-text { font-size: 17px; font-weight: 900; letter-spacing: 1.5px; color: var(--navy); }
-  .header-actions { display: flex; gap: 10px; }
-  .header-btn {
-    width: 38px; height: 38px; border-radius: 14px;
-    background: var(--panel); border: 1px solid var(--line);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; cursor: pointer; box-shadow: var(--shadow-sm);
-    position: relative;
-  }
-  .header-btn .dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); border: 2px solid var(--panel); display: none; }
-
-  /* ── WORKER CARD ── */
-  .worker-card {
-    margin: 0 16px 14px; padding: 16px 20px;
-    background: rgba(255,255,255,.88); border: 1px solid var(--line);
-    border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
-    display: flex; align-items: center; gap: 14px;
-    backdrop-filter: blur(20px);
-  }
-  .avatar {
-    width: 48px; height: 48px; border-radius: 16px;
-    background: var(--gradient-brand); color: white;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 900; font-size: 17px;
-    box-shadow: 0 10px 24px rgba(12,141,231,.2);
-    flex-shrink: 0;
-  }
-  .worker-info { flex: 1; }
-  .worker-name { font-weight: 800; font-size: 16px; letter-spacing: -.02em; }
-  .worker-role { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
-  .live-pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 11px; font-weight: 800; color: var(--success);
-    padding: 6px 11px; border-radius: 999px;
-    background: rgba(31,155,111,.08); border: 1px solid rgba(31,155,111,.18);
-    letter-spacing: .04em;
-  }
-  .live-pill::before {
-    content: ''; width: 7px; height: 7px; border-radius: 50%;
-    background: var(--success);
-    animation: pulse 2.4s infinite;
-  }
-  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(31,155,111,.4)} 75%{box-shadow:0 0 0 10px rgba(31,155,111,0)} 100%{box-shadow:0 0 0 0 rgba(31,155,111,0)} }
-
-  /* ── BOTTOM NAV ── */
-  .bottom-nav {
-    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 440px;
-    background: rgba(255,255,255,.92); backdrop-filter: blur(24px);
-    border-top: 1px solid var(--line);
-    display: flex; justify-content: space-around;
-    padding: 8px 0; padding-bottom: calc(env(safe-area-inset-bottom, 12px) + 8px);
-    z-index: 100;
-    box-shadow: 0 -8px 30px rgba(15,31,49,.06);
-  }
-  .nav-item {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    font-size: 10px; color: var(--ink-faint); cursor: pointer;
-    padding: 6px 14px; border-radius: 14px; transition: all .2s;
-    font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-    position: relative; -webkit-tap-highlight-color: transparent;
-    min-width: 60px; min-height: 44px; justify-content: center;
-  }
-  .nav-item * { pointer-events: none; }
-  .nav-item .nav-icon { font-size: 20px; height: 28px; display: flex; align-items: center; pointer-events: none; }
-  .nav-item.active { color: var(--blue); }
-  .nav-item.active::after {
-    content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%);
-    width: 22px; height: 3px; border-radius: 999px;
-    background: var(--gradient-brand);
-  }
-  .nav-item.alert-nav .nav-icon {
-    width: 52px; height: 52px; border-radius: 50%;
-    background: var(--gradient-brand);
-    box-shadow: 0 12px 30px rgba(12,141,231,.28);
-    display: flex; align-items: center; justify-content: center;
-    margin-top: -20px; font-size: 22px;
-    color: white;
-  }
-
-  /* ── SCREENS ── */
-  .screen { display: none; padding-bottom: 100px; animation: fadeUp .28s ease; }
-  .screen.active { display: block; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
-
-  .section-label {
-    font-size: 11px; font-weight: 800; color: var(--ink-faint);
-    text-transform: uppercase; letter-spacing: .12em;
-    margin: 0 20px 10px; padding-top: 4px;
-  }
-
-  /* ═══════════════════════════════════════════ */
-  /* SCREEN 1: MI ZONA AHORA                    */
-  /* ═══════════════════════════════════════════ */
-
-  /* Semaphore */
-  .semaphore {
-    margin: 0 16px 14px; padding: 18px 22px;
-    border-radius: var(--radius-lg); display: flex; align-items: center; gap: 16px;
-    cursor: pointer; transition: transform .15s;
-    box-shadow: var(--shadow-md);
-    background: rgba(255,255,255,.88); backdrop-filter: blur(16px);
-    border: 1.5px solid var(--line);
-  }
-  .semaphore:active { transform: scale(.98); }
-  .semaphore.red { border-color: rgba(219,74,67,.35); background: linear-gradient(135deg, rgba(219,74,67,.06), rgba(255,255,255,.88)); }
-  .semaphore.yellow { border-color: rgba(255,178,74,.4); background: linear-gradient(135deg, rgba(255,178,74,.06), rgba(255,255,255,.88)); }
-  .semaphore.green { border-color: rgba(31,155,111,.35); background: linear-gradient(135deg, rgba(31,155,111,.06), rgba(255,255,255,.88)); }
-  .sem-light {
-    width: 56px; height: 56px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px; font-weight: 900; flex-shrink: 0;
-  }
-  .semaphore.red .sem-light { background: rgba(219,74,67,.12); color: var(--danger); box-shadow: 0 0 28px rgba(219,74,67,.2); }
-  .semaphore.yellow .sem-light { background: rgba(255,178,74,.12); color: #b97710; box-shadow: 0 0 28px rgba(255,178,74,.2); }
-  .semaphore.green .sem-light { background: rgba(31,155,111,.12); color: var(--success); box-shadow: 0 0 28px rgba(31,155,111,.15); }
-  .sem-text { flex: 1; }
-  .sem-title { font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
-  .sem-sub { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
-  .semaphore.red .sem-title { color: var(--danger); }
-  .semaphore.yellow .sem-title { color: #a56800; }
-  .semaphore.green .sem-title { color: var(--success); }
-
-  /* Plant Map */
-  .map-section { margin: 0 16px 14px; }
-  .plant-map-container {
-    position: relative; width: 100%; overflow: hidden;
-    border-radius: var(--radius-xl); border: 1px solid var(--line);
-    box-shadow: var(--shadow-lg); touch-action: none;
-  }
-  .map-inner-wrap {
-    position: relative; width: 100%; transform-origin: center center;
-    transition: transform .25s ease;
-  }
-  .plant-map-img {
-    width: 100%; display: block; pointer-events: none;
-    user-select: none; -webkit-user-select: none;
-  }
-  .map-svg {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    z-index: 5; pointer-events: none;
-  }
-  .user-gps-dot {
-    position: absolute; z-index: 20; transform: translate(-50%, -50%);
-    transition: left .8s ease, top .8s ease;
-  }
-  .gps-accuracy {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    border-radius: 50%; background: rgba(12,141,231,.1);
-    border: 1px solid rgba(12,141,231,.2);
-    width: 50px; height: 50px;
-    animation: gpsPulse 3s infinite ease-in-out;
-  }
-  @keyframes gpsPulse {
-    0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6} 50%{transform:translate(-50%,-50%) scale(1.4);opacity:.25}
-  }
-  .gps-dot-inner {
-    width: 34px; height: 34px; border-radius: 50%;
-    background: var(--gradient-brand);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; position: relative; z-index: 2;
-    box-shadow: 0 4px 16px rgba(12,141,231,.35);
-    border: 3px solid white;
-  }
-  .gps-badge {
-    position: absolute; top: 8px; right: 8px; z-index: 15;
-    font-size: 9px; font-weight: 800; padding: 4px 9px;
-    border-radius: 999px; background: rgba(255,255,255,.92);
-    backdrop-filter: blur(8px); color: var(--blue);
-    border: 1px solid rgba(12,141,231,.15);
-    box-shadow: var(--shadow-sm);
-    display: flex; align-items: center; gap: 5px;
-  }
-  .gps-badge .gps-live {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--success); animation: pulse 2.4s infinite;
-  }
-  .muster-marker {
-    position: absolute; z-index: 12; transform: translate(-50%, -50%);
-    display: none; flex-direction: column; align-items: center; gap: 2px;
-  }
-  .muster-marker-inner {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: rgba(31,155,111,.15); border: 3px solid var(--success);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; animation: musterPulse 2s infinite;
-  }
-  @keyframes musterPulse { 0%,100%{box-shadow:0 0 8px rgba(31,155,111,.15)} 50%{box-shadow:0 0 24px rgba(31,155,111,.35)} }
-  .muster-label-text {
-    font-size: 8px; font-weight: 900; color: var(--success);
-    background: rgba(255,255,255,.92); padding: 2px 6px; border-radius: 4px;
-    text-align: center; border: 1px solid rgba(31,155,111,.2);
-    white-space: nowrap;
-  }
-  .escape-dist-badge {
-    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
-    z-index: 15; font-size: 11px; font-weight: 900; padding: 6px 14px;
-    border-radius: 999px; background: rgba(31,155,111,.92); color: white;
-    box-shadow: 0 6px 20px rgba(31,155,111,.3); backdrop-filter: blur(8px);
-    display: none; white-space: nowrap;
-  }
-
-  /* Hazard blips (on map) */
-  .hazard-blip {
-    position: absolute; z-index: 10; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    transform: translate(-50%, -50%); transition: transform .15s;
-  }
-  .hazard-blip:active { transform: translate(-50%, -50%) scale(1.15); }
-  .blip-icon {
-    width: 30px; height: 30px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 800;
-    box-shadow: var(--shadow-sm); border: 2px solid white;
-  }
-  .blip-icon.hot { background: rgba(219,74,67,.88); color: white; animation: blipRed 2s infinite; }
-  .blip-icon.crane { background: rgba(255,178,74,.92); color: white; animation: blipAmber 2.5s infinite; }
-  .blip-icon.confined { background: rgba(210,137,255,.88); color: white; }
-  .blip-icon.team { background: rgba(12,141,231,.88); color: white; }
-  @keyframes blipRed { 0%,100%{box-shadow:0 0 6px rgba(219,74,67,.25)} 50%{box-shadow:0 0 18px rgba(219,74,67,.5)} }
-  @keyframes blipAmber { 0%,100%{box-shadow:0 0 5px rgba(255,178,74,.2)} 50%{box-shadow:0 0 16px rgba(255,178,74,.4)} }
-  .blip-label {
-    font-size: 7px; font-weight: 800; color: white;
-    background: rgba(15,31,49,.7); padding: 1px 5px; border-radius: 4px;
-    white-space: nowrap; backdrop-filter: blur(4px);
-  }
-
-  .loto-strip {
-    position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 15;
-    background: rgba(210,137,255,.12); border: 1px solid rgba(210,137,255,.3);
-    border-radius: var(--radius-sm); padding: 7px 10px;
-    font-size: 9px; color: #7c3aed; font-weight: 800;
-    display: flex; align-items: center; gap: 6px;
-    backdrop-filter: blur(8px);
-  }
-  .escape-active .escape-bar {
-    border-color: var(--blue);
-    background: linear-gradient(135deg, rgba(12,141,231,.08), rgba(149,239,186,.1));
-  }
-
-  /* Hazard list */
-  .hazard-list { margin: 0 16px 14px; }
-  .hazard-card {
-    background: rgba(255,255,255,.88); border: 1px solid var(--line);
-    border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 10px;
-    display: flex; gap: 14px; align-items: flex-start;
-    cursor: pointer; transition: all .15s;
-    box-shadow: var(--shadow-sm); backdrop-filter: blur(12px);
-  }
-  .hazard-card:active { border-color: var(--blue); box-shadow: var(--shadow-md); }
-  .h-icon-box {
-    width: 44px; height: 44px; border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0;
-  }
-  .h-icon-box.hot { background: rgba(219,74,67,.08); }
-  .h-icon-box.crane { background: rgba(255,178,74,.1); }
-  .h-icon-box.confined { background: rgba(210,137,255,.08); }
-  .h-content { flex: 1; min-width: 0; }
-  .h-title { font-size: 14px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 3px; }
-  .h-meta { font-size: 12px; color: var(--ink-soft); line-height: 1.45; }
-  .h-meta strong { color: var(--ink); }
-  .h-action-pill {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11px; font-weight: 800; padding: 5px 10px;
-    border-radius: 999px; margin-top: 7px;
-    letter-spacing: .03em; text-transform: uppercase;
-  }
-  .h-action-pill.avoid { background: rgba(219,74,67,.08); color: var(--danger); border: 1px solid rgba(219,74,67,.15); }
-  .h-action-pill.caution { background: rgba(255,178,74,.1); color: #a56800; border: 1px solid rgba(255,178,74,.2); }
-  .h-action-pill.ok { background: rgba(31,155,111,.06); color: var(--success); border: 1px solid rgba(31,155,111,.15); }
-  .h-dist {
-    font-size: 20px; font-weight: 900; letter-spacing: -.04em;
-    display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
-  }
-  .h-dist small { font-size: 10px; font-weight: 700; color: var(--ink-faint); letter-spacing: 0; }
-  .h-dist.close { color: var(--danger); }
-  .h-dist.medium { color: #a56800; }
-  .h-dist.far { color: var(--success); }
-
-  /* Escape bar */
-  .escape-bar {
-    margin: 0 16px 14px; padding: 16px 18px;
-    background: linear-gradient(135deg, rgba(12,141,231,.04), rgba(149,239,186,.06));
-    border: 1px solid rgba(12,141,231,.18); border-radius: var(--radius-lg);
-    display: flex; align-items: center; gap: 14px; cursor: pointer;
-    box-shadow: var(--shadow-sm);
-  }
-  .escape-bar:active { border-color: var(--blue); }
-  .esc-icon-box {
-    width: 44px; height: 44px; border-radius: 14px;
-    background: rgba(12,141,231,.08);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; flex-shrink: 0;
-  }
-  .esc-text { flex: 1; }
-  .esc-title { font-size: 14px; font-weight: 800; color: var(--blue); letter-spacing: -.02em; }
-  .esc-sub { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
-  .esc-arrow { font-size: 18px; color: var(--blue); font-weight: 800; }
-
-  /* ═══════════════════════════════════════════ */
-  /* SCREEN 2: MI TAREA                         */
-  /* ═══════════════════════════════════════════ */
-
-  .can-i-start {
-    margin: 0 16px 16px; border-radius: var(--radius-xl); padding: 24px;
-    text-align: center; cursor: pointer; transition: transform .15s;
-    box-shadow: var(--shadow-lg); backdrop-filter: blur(16px);
-    background: rgba(255,255,255,.88); border: 2px solid var(--line);
-  }
-  .can-i-start:active { transform: scale(.97); }
-  .can-i-start.blocked { border-color: rgba(219,74,67,.35); background: linear-gradient(135deg, rgba(219,74,67,.04), rgba(255,255,255,.88)); }
-  .can-i-start.ready { border-color: rgba(31,155,111,.35); background: linear-gradient(135deg, rgba(31,155,111,.04), rgba(255,255,255,.88)); }
-  .can-i-start.wait { border-color: rgba(255,178,74,.4); background: linear-gradient(135deg, rgba(255,178,74,.04), rgba(255,255,255,.88)); }
-  .cis-icon { font-size: 48px; margin-bottom: 10px; }
-  .cis-title { font-size: 20px; font-weight: 900; letter-spacing: -.03em; margin-bottom: 6px; }
-  .cis-title.blocked { color: var(--danger); }
-  .cis-title.wait { color: #a56800; }
-  .cis-title.ready { color: var(--success); }
-  .cis-reason { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
-  .cis-reason strong { color: var(--ink); }
-
-  .task-panel {
-    margin: 0 16px 14px; background: rgba(255,255,255,.88);
-    border: 1px solid var(--line); border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg); overflow: hidden;
-    backdrop-filter: blur(16px);
-  }
-  .tp-header {
-    padding: 20px 22px; border-bottom: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(242,246,250,.6));
-    display: flex; gap: 14px; align-items: flex-start;
-  }
-  .tp-color { width: 4px; height: 52px; border-radius: 2px; flex-shrink: 0; }
-  .tp-info { flex: 1; }
-  .tp-title { font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
-  .tp-loc { font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
-  .tp-time {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--blue); font-weight: 800; margin-top: 5px;
-    padding: 4px 10px; border-radius: 999px;
-    background: rgba(12,141,231,.06); border: 1px solid rgba(12,141,231,.12);
-  }
-
-  .tp-section { padding: 18px 22px; border-bottom: 1px solid var(--line); }
-  .tp-section:last-child { border-bottom: none; }
-  .tp-section-title {
-    font-size: 11px; font-weight: 800; color: var(--ink-faint);
-    text-transform: uppercase; letter-spacing: .12em; margin-bottom: 12px;
-  }
-
-  /* Checklist */
-  .check-item {
-    display: flex; align-items: center; gap: 14px;
-    padding: 11px 0; border-bottom: 1px solid rgba(216,227,236,.4);
-    cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink);
-    transition: opacity .15s;
-  }
-  .check-item:last-child { border-bottom: none; }
-  .check-box {
-    width: 26px; height: 26px; border-radius: 8px;
-    border: 2px solid var(--line); display: flex; align-items: center;
-    justify-content: center; flex-shrink: 0; transition: all .2s;
-    font-size: 14px; color: transparent; background: var(--panel);
-  }
-  .check-item.checked .check-box { background: var(--success); border-color: var(--success); color: #fff; }
-  .check-item.checked { color: var(--ink-soft); }
-  .check-item.pending .check-box { border-color: var(--amber); }
-  .check-item.blocked .check-box { border-color: var(--danger); background: rgba(219,74,67,.04); }
-
-  /* EPI grid */
-  .epi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .epi-item {
-    background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius-sm);
-    padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 700; color: var(--ink-soft);
-  }
-  .epi-item .epi-icon { font-size: 26px; margin-bottom: 4px; }
-  .epi-item.critical { border-color: rgba(219,74,67,.25); background: rgba(219,74,67,.04); }
-  .epi-item.critical .epi-label { color: var(--danger); font-weight: 800; }
-
-  /* Interference */
-  .interf-card {
-    background: var(--panel-2); border-radius: var(--radius-md); padding: 14px 16px;
-    margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px;
-    border-left: 4px solid var(--amber);
-  }
-  .interf-card.critical { border-left-color: var(--danger); }
-  .interf-card.info { border-left-color: var(--blue); }
-  .interf-icon { font-size: 18px; flex-shrink: 0; padding-top: 1px; }
-  .interf-text { font-size: 12px; line-height: 1.5; color: var(--ink-soft); }
-  .interf-text strong { color: var(--ink); }
-
-  /* ═══════════════════════════════════════════ */
-  /* SCREEN 3: ALERTAR                          */
-  /* ═══════════════════════════════════════════ */
-
-  .alert-screen-title {
-    text-align: center; padding: 6px 20px 18px;
-    font-size: 20px; font-weight: 900; letter-spacing: -.03em;
-  }
-  .alert-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    margin: 0 16px 18px;
-  }
-  .alert-btn-big {
-    border-radius: var(--radius-lg); padding: 22px 16px;
-    text-align: center; cursor: pointer;
-    transition: transform .15s; box-shadow: var(--shadow-sm);
-    background: rgba(255,255,255,.88); backdrop-filter: blur(12px);
-  }
-  .alert-btn-big:active { transform: scale(.95); }
-  .ab-icon { font-size: 32px; margin-bottom: 8px; }
-  .ab-title { font-size: 13px; font-weight: 800; letter-spacing: -.01em; margin-bottom: 3px; }
-  .ab-sub { font-size: 11px; color: var(--ink-faint); }
-  .alert-btn-big.near-miss { border: 1.5px solid rgba(255,178,74,.3); }
-  .alert-btn-big.near-miss .ab-title { color: #a56800; }
-  .alert-btn-big.photo-report { border: 1.5px solid rgba(12,141,231,.2); }
-  .alert-btn-big.photo-report .ab-title { color: var(--blue); }
-  .alert-btn-big.voice-report { border: 1.5px solid rgba(210,137,255,.25); }
-  .alert-btn-big.voice-report .ab-title { color: #7c3aed; }
-  .alert-btn-big.positive { border: 1.5px solid rgba(31,155,111,.2); }
-  .alert-btn-big.positive .ab-title { color: var(--success); }
-  .alert-btn-big.man-down {
-    grid-column: 1 / -1;
-    border: 2px solid rgba(219,74,67,.3);
-    background: linear-gradient(135deg, rgba(219,74,67,.04), rgba(255,255,255,.88));
-  }
-  .alert-btn-big.man-down .ab-title { color: var(--danger); font-size: 15px; }
-
-  /* Voice recorder */
-  .voice-recorder {
-    margin: 0 16px 14px; background: rgba(255,255,255,.92);
-    border: 1px solid var(--line); border-radius: var(--radius-xl);
-    padding: 24px; text-align: center; display: none;
-    box-shadow: var(--shadow-lg);
-  }
-  .voice-recorder.active { display: block; }
-  .vr-wave { height: 40px; display: flex; align-items: flex-end; justify-content: center; gap: 4px; margin-bottom: 14px; }
-  .vr-bar { width: 5px; border-radius: 999px; }
-  .vr-bar.recording { background: var(--gradient-brand); animation: wave 1s infinite ease-in-out; }
-  .vr-bar:nth-child(1) { height: 15px; animation-delay: 0s; }
-  .vr-bar:nth-child(2) { height: 25px; animation-delay: .1s; }
-  .vr-bar:nth-child(3) { height: 35px; animation-delay: .2s; }
-  .vr-bar:nth-child(4) { height: 20px; animation-delay: .3s; }
-  .vr-bar:nth-child(5) { height: 30px; animation-delay: .4s; }
-  .vr-bar:nth-child(6) { height: 18px; animation-delay: .5s; }
-  .vr-bar:nth-child(7) { height: 28px; animation-delay: .15s; }
-  .vr-bar:nth-child(8) { height: 22px; animation-delay: .35s; }
-  @keyframes wave { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(.3)} }
-  .vr-time { font-size: 32px; font-weight: 900; letter-spacing: -.04em; color: var(--danger); margin-bottom: 4px; }
-  .vr-hint { font-size: 12px; color: var(--ink-soft); margin-bottom: 16px; }
-  .vr-stop {
-    width: 56px; height: 56px; border-radius: 50%;
-    background: var(--danger); border: none; cursor: pointer;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 22px; color: white;
-    box-shadow: 0 8px 24px rgba(219,74,67,.3);
-  }
-
-  .recent-reports { margin: 0 16px; }
-  .rr-item {
-    background: rgba(255,255,255,.88); border: 1px solid var(--line);
-    border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 8px;
-    display: flex; gap: 12px; align-items: center;
-    box-shadow: var(--shadow-sm);
-  }
-  .rr-icon { font-size: 18px; flex-shrink: 0; }
-  .rr-content { flex: 1; min-width: 0; }
-  .rr-text { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .rr-meta { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
-  .rr-status {
-    font-size: 10px; font-weight: 800; padding: 4px 10px;
-    border-radius: 999px; white-space: nowrap;
-    text-transform: uppercase; letter-spacing: .06em;
-  }
-  .rr-status.sent { background: rgba(31,155,111,.08); color: var(--success); border: 1px solid rgba(31,155,111,.15); }
-  .rr-status.processing { background: rgba(255,178,74,.08); color: #a56800; border: 1px solid rgba(255,178,74,.15); }
-
-  /* ═══════════════════════════════════════════ */
-  /* SCREEN 4: SUPERVISOR                       */
-  /* ═══════════════════════════════════════════ */
-
-  .sup-title {
-    font-size: 20px; font-weight: 900; letter-spacing: -.03em;
-    padding: 4px 20px 16px;
-  }
-
-  .kpi-scroll { display: flex; gap: 8px; margin: 0 16px 14px; overflow-x: auto; padding-bottom: 4px; }
-  .kpi-card {
-    background: rgba(255,255,255,.88); border: 1px solid var(--line);
-    border-radius: var(--radius-md); padding: 14px 18px;
-    min-width: 105px; text-align: center; flex-shrink: 0;
-    box-shadow: var(--shadow-sm);
-  }
-  .kpi-value { font-size: 28px; font-weight: 900; letter-spacing: -.04em; line-height: 1; margin-bottom: 4px; }
-  .kpi-label { font-size: 10px; color: var(--ink-faint); font-weight: 700; line-height: 1.3; text-transform: uppercase; letter-spacing: .06em; }
-
-  .heatmap-card {
-    margin: 0 16px 14px; background: rgba(255,255,255,.88);
-    border: 1px solid var(--line); border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-lg); overflow: hidden;
-  }
-  .heatmap {
-    width: 100%; aspect-ratio: 1.5; position: relative; overflow: hidden;
-    background: linear-gradient(180deg, rgba(242,246,250,.9), rgba(255,255,255,.9));
-  }
-  .heatmap .plant-grid {
-    position: absolute; inset: 0;
-    background:
-      linear-gradient(90deg, transparent 19%, rgba(12,141,231,.04) 20%, transparent 21%),
-      linear-gradient(90deg, transparent 39%, rgba(12,141,231,.04) 40%, transparent 41%),
-      linear-gradient(90deg, transparent 59%, rgba(12,141,231,.04) 60%, transparent 61%),
-      linear-gradient(90deg, transparent 79%, rgba(12,141,231,.04) 80%, transparent 81%),
-      linear-gradient(0deg, transparent 24%, rgba(12,141,231,.04) 25%, transparent 26%),
-      linear-gradient(0deg, transparent 49%, rgba(12,141,231,.04) 50%, transparent 51%),
-      linear-gradient(0deg, transparent 74%, rgba(12,141,231,.04) 75%, transparent 76%);
-  }
-  .heat-zone {
-    position: absolute; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; cursor: pointer; transition: transform .15s;
-  }
-  .heat-zone:active { transform: scale(1.08); }
-  .hz-label { font-size: 10px; font-weight: 800; }
-  .hz-count { font-size: 18px; font-weight: 900; letter-spacing: -.04em; }
-  .heat-zone.critical {
-    background: radial-gradient(circle, rgba(219,74,67,.18) 0%, rgba(219,74,67,.03) 70%);
-    border: 2px solid var(--danger); color: var(--danger);
-    animation: hzPulse 2s infinite;
-  }
-  .heat-zone.warning {
-    background: radial-gradient(circle, rgba(255,178,74,.15) 0%, rgba(255,178,74,.02) 70%);
-    border: 2px solid var(--amber); color: #a56800;
-  }
-  .heat-zone.low {
-    background: radial-gradient(circle, rgba(31,155,111,.1) 0%, rgba(31,155,111,.02) 70%);
-    border: 2px solid var(--success); color: var(--success);
-  }
-  @keyframes hzPulse { 0%,100%{box-shadow:0 0 12px rgba(219,74,67,.12)} 50%{box-shadow:0 0 28px rgba(219,74,67,.28)} }
-
-  .simops-list { margin: 0 16px 14px; }
-  .simops-card {
-    background: rgba(255,255,255,.88); border: 1px solid var(--line);
-    border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 10px;
-    box-shadow: var(--shadow-sm); border-left: 4px solid var(--danger);
-    transition: opacity .3s;
-  }
-  .simops-card.resolved { border-left-color: var(--success); opacity: .6; }
-  .sc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
-  .sc-title { font-size: 14px; font-weight: 800; letter-spacing: -.02em; }
-  .sc-badge {
-    font-size: 10px; font-weight: 800; padding: 4px 10px;
-    border-radius: 999px; text-transform: uppercase; letter-spacing: .08em;
-  }
-  .sc-badge.active { background: rgba(219,74,67,.08); color: var(--danger); border: 1px solid rgba(219,74,67,.15); }
-  .sc-badge.blocked { background: rgba(219,74,67,.12); color: var(--danger); border: 1px solid rgba(219,74,67,.2); }
-  .sc-badge.resolved { background: rgba(31,155,111,.08); color: var(--success); border: 1px solid rgba(31,155,111,.15); }
-  .sc-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-bottom: 10px; }
-  .sc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .sc-btn {
-    font-size: 12px; font-weight: 800; padding: 9px 16px; border-radius: 14px;
-    border: none; cursor: pointer; letter-spacing: -.01em;
-  }
-  .sc-btn.primary { background: var(--gradient-brand); color: white; box-shadow: 0 8px 20px rgba(12,141,231,.18); }
-  .sc-btn.secondary { background: var(--panel); color: var(--ink-soft); border: 1px solid var(--line); }
-
-  .workers-critical { margin: 0 16px 14px; }
-  .wc-item {
-    background: rgba(255,255,255,.88); border: 1px solid var(--line);
-    border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 8px;
-    display: flex; align-items: center; gap: 12px;
-    box-shadow: var(--shadow-sm);
-  }
-  .wc-avatar {
-    width: 38px; height: 38px; border-radius: 12px; font-size: 13px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 900; flex-shrink: 0; color: white;
-    box-shadow: 0 6px 16px rgba(0,0,0,.12);
-  }
-  .wc-info { flex: 1; min-width: 0; }
-  .wc-name { font-size: 13px; font-weight: 800; }
-  .wc-detail { font-size: 11px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .wc-risk {
-    font-size: 10px; font-weight: 800; padding: 4px 10px;
-    border-radius: 999px; white-space: nowrap;
-    text-transform: uppercase; letter-spacing: .06em;
-  }
-
-  /* ── TOAST ── */
-  .toast {
-    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(50px);
-    max-width: 390px; width: 88%;
-    background: linear-gradient(135deg, #0f2033, #123554);
-    color: white; padding: 14px 20px; border-radius: var(--radius-lg);
-    font-size: 13px; font-weight: 700;
-    box-shadow: 0 18px 48px rgba(16,32,51,.3);
-    border: 1px solid rgba(255,255,255,.08);
-    z-index: 200; opacity: 0; transition: all .3s ease;
-    text-align: center;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-
-  /* ── MODAL (bottom sheet) ── */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(15,31,49,.35); backdrop-filter: blur(10px);
-    z-index: 300; align-items: flex-end; justify-content: center;
-  }
-  .modal-overlay.active { display: flex; }
-  .modal-sheet {
-    background: rgba(255,255,255,.96); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    width: 100%; max-width: 440px; max-height: 78vh; overflow-y: auto;
-    padding: 0 22px 32px; animation: slideUp .3s ease;
-    border: 1px solid var(--line); border-bottom: none;
-    box-shadow: 0 -20px 60px rgba(15,31,49,.12);
-  }
-  @keyframes slideUp { from{transform:translateY(100%)} to{transform:none} }
-  .modal-handle { width: 40px; height: 4px; border-radius: 999px; background: var(--line); margin: 12px auto 18px; }
-  .modal-sheet h3 { font-size: 18px; font-weight: 900; letter-spacing: -.03em; margin-bottom: 14px; }
-  .modal-sheet p { font-size: 13px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 10px; }
-  .modal-close {
-    width: 100%; padding: 14px; border-radius: 14px;
-    background: var(--panel-2); border: 1px solid var(--line);
-    color: var(--ink); font-weight: 800; font-size: 14px;
-    cursor: pointer; margin-top: 12px;
-  }
-
-  /* Loading skeleton */
-  .skeleton {
-    background: linear-gradient(90deg, var(--panel-2) 25%, rgba(255,255,255,.6) 50%, var(--panel-2) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 12px;
-  }
-  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-  /* ═══ Worker dots on map ═══ */
-  .worker-map-dot {
-    position: absolute; z-index: 14; transform: translate(-50%, -50%);
-    cursor: pointer; transition: all .3s; display: flex; flex-direction: column; align-items: center; gap: 1px;
-  }
-  .worker-map-dot:active { transform: translate(-50%, -50%) scale(1.2); }
-  .wmd-circle {
-    width: 26px; height: 26px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 900; color: white;
-    border: 2px solid rgba(255,255,255,.9);
-    box-shadow: 0 3px 10px rgba(0,0,0,.2);
-  }
-  .wmd-name {
-    font-size: 7px; font-weight: 800; color: white;
-    background: rgba(15,31,49,.65); padding: 1px 5px; border-radius: 3px;
-    white-space: nowrap; backdrop-filter: blur(4px);
-  }
-
-  /* ═══ Incident dots on map ═══ */
-  .incident-map-dot {
-    position: absolute; z-index: 13; transform: translate(-50%, -50%);
-    cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px;
-  }
-  .imd-circle {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: rgba(219,74,67,.85); border: 2px solid white;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px; animation: incidentPulse 2s infinite;
-    box-shadow: 0 3px 12px rgba(219,74,67,.3);
-  }
-  @keyframes incidentPulse { 0%,100%{box-shadow:0 0 6px rgba(219,74,67,.2)} 50%{box-shadow:0 0 18px rgba(219,74,67,.5)} }
-  .imd-label {
-    font-size: 7px; font-weight: 800; color: white; max-width: 70px;
-    background: rgba(219,74,67,.7); padding: 1px 4px; border-radius: 3px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    backdrop-filter: blur(4px);
-  }
-
-  /* ═══ Map layer toggles ═══ */
-  .map-layers {
-    position: absolute; top: 8px; left: 8px; z-index: 18;
-    display: flex; gap: 4px;
-  }
-  .map-layer-btn {
-    font-size: 8px; font-weight: 800; padding: 4px 8px;
-    border-radius: 999px; border: 1px solid rgba(255,255,255,.5);
-    background: rgba(255,255,255,.85); backdrop-filter: blur(8px);
-    cursor: pointer; color: var(--ink-soft);
-    box-shadow: var(--shadow-sm); transition: all .2s;
-  }
-  .map-layer-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
-
-  /* ═══ Worker popup on map ═══ */
-  .worker-popup {
-    position: absolute; z-index: 25; bottom: 100%; left: 50%;
-    transform: translateX(-50%); margin-bottom: 8px;
-    background: rgba(255,255,255,.96); border: 1px solid var(--line);
-    border-radius: var(--radius-md); padding: 12px 14px;
-    box-shadow: var(--shadow-lg); backdrop-filter: blur(16px);
-    min-width: 170px; animation: fadeUp .2s ease;
-  }
-  .worker-popup::after {
-    content: ''; position: absolute; bottom: -6px; left: 50%;
-    transform: translateX(-50%) rotate(45deg);
-    width: 12px; height: 12px; background: white;
-    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
-  }
-  .wp-name { font-size: 13px; font-weight: 800; }
-  .wp-role { font-size: 11px; color: var(--ink-soft); margin-bottom: 8px; }
-  .wp-actions { display: flex; gap: 6px; }
-  .wp-action {
-    flex: 1; padding: 8px; border-radius: 10px; text-align: center;
-    font-size: 11px; font-weight: 800; cursor: pointer; border: 1px solid var(--line);
-    background: var(--panel-2); transition: all .15s;
-  }
-  .wp-action:active { background: rgba(12,141,231,.06); border-color: var(--blue); }
-  .wp-action.chat-action { background: rgba(12,141,231,.06); border-color: rgba(12,141,231,.2); color: var(--blue); }
-
-  /* ═══ Notification banner ═══ */
-  .notif-banner {
-    position: fixed; top: 0; left: 50%; transform: translateX(-50%) translateY(-100%);
-    max-width: 440px; width: 100%; z-index: 250;
-    background: linear-gradient(135deg, rgba(219,74,67,.95), rgba(255,123,115,.95));
-    color: white; padding: 14px 20px; font-size: 13px; font-weight: 700;
-    box-shadow: 0 8px 30px rgba(219,74,67,.3);
-    backdrop-filter: blur(16px); transition: transform .4s ease;
-    display: flex; align-items: center; gap: 12px; cursor: pointer;
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
-  }
-  .notif-banner.show { transform: translateX(-50%) translateY(0); }
-  .notif-banner .notif-icon { font-size: 22px; flex-shrink: 0; }
-  .notif-banner .notif-text { flex: 1; }
-  .notif-banner .notif-close { font-size: 18px; opacity: .7; }
-
-  /* ═══════════════════════════════════════════ */
-  /* SCREEN 4: CHAT                             */
-  /* ═══════════════════════════════════════════ */
-  .chat-screen-wrap {
-    display: flex; flex-direction: column; height: calc(100vh - 200px);
-  }
-  .chat-contacts-strip {
-    display: flex; gap: 10px; padding: 0 16px 12px;
-    overflow-x: auto; flex-shrink: 0;
-  }
-  .chat-contact {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    cursor: pointer; min-width: 54px; flex-shrink: 0;
-    transition: transform .15s;
-  }
-  .chat-contact:active { transform: scale(.95); }
-  .chat-contact.active .cc-avatar { border-color: var(--blue); box-shadow: 0 4px 14px rgba(12,141,231,.25); }
-  .cc-avatar {
-    width: 44px; height: 44px; border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 900; color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,.12);
-    border: 2.5px solid transparent; position: relative;
-  }
-  .cc-avatar.ai { background: var(--gradient-brand); }
-  .cc-online {
-    position: absolute; bottom: -1px; right: -1px;
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--success); border: 2px solid white;
-  }
-  .cc-name {
-    font-size: 9px; font-weight: 700; color: var(--ink-soft);
-    text-align: center; max-width: 56px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .chat-contact.active .cc-name { color: var(--blue); font-weight: 800; }
-
-  .chat-messages {
-    flex: 1; overflow-y: auto; padding: 0 16px 12px;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .chat-msg {
-    max-width: 82%; display: flex; flex-direction: column; gap: 2px;
-    animation: fadeUp .2s ease;
-  }
-  .chat-msg.sent { align-self: flex-end; }
-  .chat-msg.received { align-self: flex-start; }
-  .chat-msg-bubble {
-    padding: 12px 16px; border-radius: 18px;
-    font-size: 13px; line-height: 1.55; font-weight: 500;
-    white-space: pre-line;
-  }
-  .chat-msg.sent .chat-msg-bubble {
-    background: var(--gradient-brand); color: white;
-    border-bottom-right-radius: 6px;
-  }
-  .chat-msg.received .chat-msg-bubble {
-    background: rgba(255,255,255,.92); border: 1px solid var(--line);
-    color: var(--ink); border-bottom-left-radius: 6px;
-    box-shadow: var(--shadow-sm);
-  }
-  .chat-msg-meta {
-    font-size: 10px; color: var(--ink-faint); font-weight: 600; padding: 0 4px;
-  }
-  .chat-msg.sent .chat-msg-meta { text-align: right; }
-
-  .chat-typing {
-    display: flex; gap: 4px; padding: 12px 16px;
-    align-self: flex-start;
-    background: rgba(255,255,255,.92); border: 1px solid var(--line);
-    border-radius: 18px; border-bottom-left-radius: 6px;
-  }
-  .chat-typing-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--ink-faint);
-    animation: typingBounce .8s infinite ease-in-out;
-  }
-  .chat-typing-dot:nth-child(2) { animation-delay: .15s; }
-  .chat-typing-dot:nth-child(3) { animation-delay: .3s; }
-  @keyframes typingBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
-
-  .chat-quick-actions {
-    display: flex; gap: 6px; padding: 8px 16px;
-    overflow-x: auto; flex-shrink: 0;
-  }
-  .chat-quick-btn {
-    font-size: 11px; font-weight: 700; padding: 7px 14px;
-    border-radius: 999px; border: 1px solid var(--line);
-    background: rgba(255,255,255,.88); color: var(--ink-soft);
-    cursor: pointer; white-space: nowrap; flex-shrink: 0;
-    transition: all .15s; backdrop-filter: blur(8px);
-  }
-  .chat-quick-btn:active { border-color: var(--blue); color: var(--blue); background: rgba(12,141,231,.04); }
-
-  .chat-input-bar {
-    display: flex; gap: 8px; padding: 12px 16px 8px;
-    align-items: center; flex-shrink: 0;
-    background: rgba(255,255,255,.92); backdrop-filter: blur(16px);
-    border-top: 1px solid var(--line);
-  }
-  .chat-input {
-    flex: 1; padding: 11px 16px; border-radius: 999px;
-    border: 1px solid var(--line); background: var(--panel-2);
-    font-size: 14px; font-family: Inter, sans-serif;
-    color: var(--ink); outline: none; transition: border-color .2s;
-  }
-  .chat-input:focus { border-color: var(--blue); }
-  .chat-input::placeholder { color: var(--ink-faint); }
-  .chat-send-btn {
-    width: 42px; height: 42px; border-radius: 50%;
-    background: var(--gradient-brand); border: none;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; color: white; cursor: pointer;
-    box-shadow: 0 6px 16px rgba(12,141,231,.25);
-    flex-shrink: 0; transition: transform .15s;
-  }
-  .chat-send-btn:active { transform: scale(.9); }
-  .chat-mic-btn {
-    width: 42px; height: 42px; border-radius: 50%;
-    background: var(--panel); border: 1px solid var(--line);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; cursor: pointer; flex-shrink: 0;
-  }
-
-  /* ═══ Map zoom controls ═══ */
-  .map-zoom-controls {
-    position: absolute; bottom: 10px; right: 10px; z-index: 18;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .map-zoom-btn {
-    width: 34px; height: 34px; border-radius: 10px;
-    background: rgba(255,255,255,.92); border: 1px solid var(--line);
-    backdrop-filter: blur(8px); cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 800; color: var(--ink);
-    box-shadow: var(--shadow-sm); transition: all .15s;
-  }
-  .map-zoom-btn:active { background: var(--blue); color: white; }
-  .map-zoom-btn.center-btn { font-size: 14px; }
-
-  /* ═══ Notification Inbox ═══ */
-  .notif-inbox {
-    max-height: 55vh; overflow-y: auto;
-  }
-  .notif-inbox-item {
-    display: flex; gap: 12px; align-items: flex-start;
-    padding: 14px 0; border-bottom: 1px solid var(--line);
-    cursor: pointer; transition: background .15s;
-  }
-  .notif-inbox-item:last-child { border-bottom: none; }
-  .notif-inbox-item.unread { font-weight: 800; background: rgba(12,141,231,.03); margin: 0 -22px; padding: 14px 22px; border-radius: 12px; }
-  .notif-inbox-item.unread .ni-title { font-weight: 900; color: var(--ink); }
-  .ni-icon {
-    width: 36px; height: 36px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0;
-    background: var(--panel-2); border: 1px solid var(--line);
-  }
-  .ni-icon.hazard { background: rgba(219,74,67,.06); border-color: rgba(219,74,67,.15); }
-  .ni-icon.conflict { background: rgba(219,74,67,.08); border-color: rgba(219,74,67,.2); }
-  .ni-icon.workers { background: rgba(255,178,74,.08); border-color: rgba(255,178,74,.2); }
-  .ni-icon.report { background: rgba(12,141,231,.06); border-color: rgba(12,141,231,.15); }
-  .ni-content { flex: 1; min-width: 0; }
-  .ni-title { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
-  .ni-detail { font-size: 11px; color: var(--ink-soft); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .ni-time { font-size: 10px; color: var(--ink-faint); font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-  .ni-unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 4px; }
-
-  /* ═══ Photo Gallery in Hazard Modal ═══ */
-  .hazard-photos {
-    margin-top: 14px;
-  }
-  .hazard-photos-title {
-    font-size: 11px; font-weight: 800; color: var(--ink-faint);
-    text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px;
-  }
-  .hazard-photo-grid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px;
-  }
-  .hazard-photo-item {
-    border-radius: var(--radius-sm); overflow: hidden;
-    border: 1px solid var(--line); background: var(--panel-2);
-  }
-  .hazard-photo-img {
-    width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block;
-    background: linear-gradient(135deg, var(--panel-2), rgba(12,141,231,.04));
-  }
-  .hazard-photo-meta {
-    display: flex; align-items: center; gap: 6px; padding: 6px 8px;
-    font-size: 10px; font-weight: 700; color: var(--ink-soft);
-  }
-  .hazard-photo-avatar {
-    width: 18px; height: 18px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 7px; font-weight: 900; color: white; flex-shrink: 0;
-  }
-  .hazard-photo-upload {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 14px; border-radius: var(--radius-md);
-    border: 2px dashed var(--line); cursor: pointer;
-    color: var(--ink-faint); font-size: 12px; font-weight: 800;
-    transition: all .15s; background: rgba(255,255,255,.5);
-  }
-  .hazard-photo-upload:active { border-color: var(--blue); color: var(--blue); background: rgba(12,141,231,.03); }
-  .hazard-photo-upload input { display: none; }
-
-  /* ═══ EPI Visual Cards ═══ */
-  .epi-grid-v2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .epi-card-v2 {
-    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
-    padding: 0; text-align: center; font-size: 11px; font-weight: 700; color: var(--ink-soft);
-    overflow: hidden;
-  }
-  .epi-card-v2.critical { border-color: rgba(219,74,67,.25); }
-  .epi-card-v2.critical .epi-v2-label { color: var(--danger); font-weight: 800; }
-  .epi-v2-img {
-    width: 100%; aspect-ratio: 1; object-fit: contain;
-    background: var(--panel-2); display: flex; align-items: center; justify-content: center;
-    font-size: 36px; border-bottom: 1px solid var(--line);
-  }
-  .epi-v2-img img { width: 100%; height: 100%; object-fit: contain; }
-  .epi-v2-body { padding: 8px 6px; }
-  .epi-v2-label { font-size: 11px; font-weight: 700; line-height: 1.3; }
-  .epi-v2-tag { font-size: 9px; color: var(--danger); font-weight: 800; margin-top: 2px; }
-</style>
+<link rel="stylesheet" href="/css/vars.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/map.css">
+<link rel="stylesheet" href="/css/tasks.css">
+<link rel="stylesheet" href="/css/alerts.css">
+<link rel="stylesheet" href="/css/chat.css">
+<link rel="stylesheet" href="/css/components.css">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="app-header">
-  <div class="brand-area">
-    <div class="brand-mark">
-      <img src="/logos/Moeve-Symbol.png" alt="Moeve" onerror="this.style.display='none'">
+<!-- ═══════ LOGIN SCREEN ═══════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo"><img src="/logos/Moeve-Symbol.png" alt="Moeve"></div>
+  <div class="login-title">SENTINEL</div>
+  <div class="login-sub">Copiloto de Seguridad en Campo</div>
+  <form class="login-form" id="loginForm">
+    <input class="login-input" id="loginUser" placeholder="Usuario" autocomplete="username" required>
+    <input class="login-input" id="loginPass" type="password" placeholder="Contraseña" autocomplete="current-password" required>
+    <button class="login-btn" type="submit">Iniciar Sesión</button>
+    <div class="login-error" id="loginError"></div>
+  </form>
+</div>
+
+<!-- ═══════ APP CONTAINER ═══════ -->
+<div id="appContainer" style="display:none">
+
+  <!-- ── HEADER ── -->
+  <header class="app-header">
+    <div class="brand-area">
+      <div class="brand-mark"><img src="/logos/Moeve-Symbol.png" alt=""></div>
+      <span class="brand-text">SENTINEL</span>
     </div>
-    <span class="brand-text">SENTINEL</span>
+    <div class="header-actions">
+      <button class="header-btn" id="radioBtn" onclick="openRadioMenu()" title="Radio">📻<span class="dot"></span></button>
+      <button class="header-btn" id="notifBtn" onclick="openNotifInbox()" title="Notificaciones">🔔<span class="dot"></span></button>
+      <button class="header-btn" onclick="logout()" title="Cerrar sesión">🚪</button>
+    </div>
+  </header>
+
+  <!-- ── WORKER CARD ── -->
+  <div class="worker-card">
+    <div class="avatar" id="workerAvatar">JL</div>
+    <div class="worker-info">
+      <div class="worker-name" id="workerName">José Luis Martínez</div>
+      <div class="worker-role" id="workerRole">Tubero · MASA Industrial S.L.</div>
+      <span class="admin-badge" id="adminBadge" style="display:none">🛡️ SUPERVISOR</span>
+    </div>
+    <div class="live-pill">LIVE</div>
   </div>
-  <div class="header-actions">
-    <div class="header-btn" onclick="showToast('Canal radio 7 · Supervisor: M. García')">📻</div>
-    <div class="header-btn" id="bellBtn" onclick="openNotifInbox()">🔔<div class="dot" id="bellDot"></div></div>
+
+  <!-- ═══════ SCREEN: ZONE (MAP) ═══════ -->
+  <div class="screen active" id="screen-zone">
+    <div id="semaphore" class="semaphore yellow" onclick="switchScreen('zone')">
+      <div class="sem-light">🟡</div>
+      <div class="sem-text">
+        <div class="sem-title">Cargando...</div>
+        <div class="sem-sub"></div>
+      </div>
+    </div>
+
+    <div class="map-section">
+      <div class="plant-map-container" id="plantMapContainer">
+        <!-- Map layers toggle -->
+        <div class="map-layers">
+          <button class="map-layer-btn active" data-layer="workers" onclick="toggleMapLayer('workers')">👷</button>
+          <button class="map-layer-btn active" data-layer="hazards" onclick="toggleMapLayer('hazards')">⚠️</button>
+          <button class="map-layer-btn" data-layer="incidents" onclick="toggleMapLayer('incidents')">📋</button>
+        </div>
+
+        <!-- Zoom controls -->
+        <div class="map-zoom-controls">
+          <button class="map-zoom-btn" id="zoomIn">+</button>
+          <button class="map-zoom-btn" id="zoomOut">−</button>
+        </div>
+
+        <!-- Escape distance -->
+        <div class="escape-dist-badge" id="escapeDistBadge"></div>
+
+        <!-- GPS badge -->
+        <div class="gps-badge"><span class="gps-live"></span><span id="gpsBadge">GPS</span></div>
+
+        <!-- Map inner (zoomable/pannable) -->
+        <div class="map-inner-wrap" id="mapInnerWrap">
+          <img class="plant-map-img" id="plantMapImg" src="/map/planta.png" alt="Planta">
+          <svg class="map-svg" id="mapSvg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+
+          <!-- User GPS dot -->
+          <div class="user-gps-dot" id="userGpsDot" style="display:none">
+            <div class="gps-accuracy"></div>
+            <div class="gps-dot-inner">📍</div>
+          </div>
+
+          <!-- Muster point marker -->
+          <div class="muster-marker" id="musterMarker">
+            <div class="muster-marker-inner">🏁</div>
+            <div class="muster-label-text">Punto de reunión</div>
+          </div>
+
+          <!-- Overlays -->
+          <div id="hazardOverlay"></div>
+          <div id="workerOverlay"></div>
+          <div id="incidentOverlay"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Escape route bar -->
+    <div class="escape-active-wrap">
+      <div class="escape-bar" id="escapeBar">
+        <div class="esc-icon-box">🚨</div>
+        <div class="esc-text">
+          <div class="esc-title">Ruta de Evacuación</div>
+          <div class="esc-sub">Toca para activar</div>
+        </div>
+        <div class="esc-arrow">›</div>
+      </div>
+    </div>
+
+    <!-- Hazard list -->
+    <div class="section-label">⚠️ RIESGOS EN TU ZONA</div>
+    <div class="hazard-list" id="hazardList"></div>
+
+    <!-- Admin section -->
+    <div class="admin-section admin-only" style="display:none">
+      <div class="section-label">🛡️ PANEL DE SUPERVISOR</div>
+      <div class="admin-card">
+        <h4>📋 Crear Tarea</h4>
+        <input class="admin-input" id="adminTaskTitle" placeholder="Título de la tarea">
+        <select class="admin-input admin-select" id="adminTaskWorker">
+          <option value="JL">JL — José Luis Martínez</option>
+          <option value="AR">AR — Ahmed Raza</option>
+          <option value="PS">PS — Pedro Sánchez</option>
+          <option value="ML">ML — María López</option>
+          <option value="FC">FC — Francisco Castro</option>
+          <option value="IG">IG — Isabel García</option>
+        </select>
+        <select class="admin-input admin-select" id="adminTaskZone">
+          <option value="H-100">H-100 — Horno</option>
+          <option value="RACK-N">RACK-N — Rack Eléctrico</option>
+          <option value="TK-123">TK-123 — Tanque</option>
+          <option value="C-201">C-201 — Columna</option>
+          <option value="PIPE-S">PIPE-S — Pipe Rack</option>
+          <option value="TALLER">TALLER — Taller Mecánico</option>
+        </select>
+        <button class="admin-btn primary" onclick="adminCreateTask()">➕ Crear Tarea</button>
+      </div>
+      <div class="admin-card">
+        <h4>⏱️ Demo Tareas Temporizadas</h4>
+        <p style="font-size:11px;color:var(--ink-soft);margin-bottom:10px">Crea 3 tareas que se desbloquean en 1min, 2h y 4h</p>
+        <button class="admin-btn secondary" onclick="preloadDemoTasks()">🔓 Precargar Demo</button>
+      </div>
+      <div class="admin-card">
+        <h4>🚨 Emitir Alarma</h4>
+        <button class="admin-btn danger" onclick="adminAlarm()">🚨 Alarma General</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ SCREEN: TASKS ═══════ -->
+  <div class="screen" id="screen-task">
+    <div id="canIStart" class="can-i-start ready">
+      <div class="cis-icon">⏳</div>
+      <div><div class="cis-title">Cargando...</div></div>
+    </div>
+
+    <div class="section-label">📋 MIS TAREAS</div>
+    <div id="taskList"></div>
+
+    <div class="section-label">🦺 EQUIPO DE PROTECCIÓN</div>
+    <div style="margin:0 16px">
+      <div class="epi-grid-v2" id="epiGrid"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ SCREEN: ALERT ═══════ -->
+  <div class="screen" id="screen-alert">
+    <div class="alert-screen-title">🚨 Canal de Alertas</div>
+    <div class="alert-grid">
+      <div class="alert-btn-big" onclick="submitReport('near_miss')">
+        <div class="ab-icon">⚠️</div>
+        <div class="ab-title">Near Miss</div>
+        <div class="ab-sub">Casi-accidente</div>
+      </div>
+      <div class="alert-btn-big" onclick="submitReport('photo')">
+        <div class="ab-icon">📸</div>
+        <div class="ab-title">Foto</div>
+        <div class="ab-sub">Evidencia visual</div>
+      </div>
+      <div class="alert-btn-big" onclick="submitReport('voice')">
+        <div class="ab-icon">🎙️</div>
+        <div class="ab-title">Audio</div>
+        <div class="ab-sub">Mensaje de voz</div>
+      </div>
+      <div class="alert-btn-big" onclick="submitReport('observation')">
+        <div class="ab-icon">👁️</div>
+        <div class="ab-title">Observación</div>
+        <div class="ab-sub">Hallazgo general</div>
+      </div>
+      <div class="alert-btn-big man-down" onclick="submitReport('man_down')">
+        <div class="ab-icon">🆘</div>
+        <div class="ab-title">EMERGENCIA</div>
+        <div class="ab-sub">Hombre caído / Emergencia</div>
+      </div>
+    </div>
+
+    <!-- Voice recorder -->
+    <div class="voice-recorder" id="voiceRecorder">
+      <div class="vr-wave">
+        <div class="vr-bar"></div><div class="vr-bar"></div><div class="vr-bar"></div>
+        <div class="vr-bar"></div><div class="vr-bar"></div><div class="vr-bar"></div>
+        <div class="vr-bar"></div><div class="vr-bar"></div>
+      </div>
+      <div class="vr-time">00:00</div>
+      <div class="vr-hint">Grabando audio...</div>
+      <button class="vr-stop" onclick="stopVoiceRecording()">⏹</button>
+    </div>
+
+    <div class="section-label">📋 MIS REPORTES</div>
+    <div class="recent-reports" id="recentReports"></div>
+  </div>
+
+  <!-- ═══════ SCREEN: CHAT ═══════ -->
+  <div class="screen" id="screen-chat">
+    <div class="chat-screen-wrap">
+      <div class="chat-contacts-strip" id="chatContacts"></div>
+
+      <div class="chat-messages" id="chatMessages"></div>
+
+      <div class="chat-quick-actions">
+        <button class="chat-quick-btn" onclick="sendQuickAction('¿Puedo empezar mi tarea?')">¿Puedo empezar?</button>
+        <button class="chat-quick-btn" onclick="sendQuickAction('Riesgos en mi zona')">Riesgos</button>
+        <button class="chat-quick-btn" onclick="sendQuickAction('Ruta de evacuación')">Evacuación</button>
+        <button class="chat-quick-btn" onclick="sendQuickAction('EPI requerido')">EPI</button>
+        <button class="chat-quick-btn" onclick="sendQuickAction('Tiempo atmosférico')">Tiempo</button>
+      </div>
+
+      <div class="chat-input-bar">
+        <input class="chat-input" id="chatInput" placeholder="Escribe un mensaje..." autocomplete="off">
+        <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM NAV ── -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" data-screen="zone" onclick="switchScreen('zone')">
+      <span class="nav-icon">🗺️</span>ZONA
+    </div>
+    <div class="nav-item" data-screen="task" onclick="switchScreen('task')">
+      <span class="nav-icon">📋</span>TAREAS
+    </div>
+    <div class="nav-item alert-nav" data-screen="alert" onclick="switchScreen('alert')">
+      <span class="nav-icon">🚨</span>ALERTAR
+    </div>
+    <div class="nav-item" data-screen="chat" onclick="switchScreen('chat')">
+      <span class="nav-icon">💬</span>CHAT
+    </div>
+  </nav>
+
+</div><!-- /appContainer -->
+
+<!-- ═══════ MODALS & SHEETS ═══════ -->
+
+<!-- Hazard detail modal -->
+<div class="modal-overlay" id="hazardModal">
+  <div class="modal-sheet"></div>
+</div>
+
+<!-- EPI detail modal -->
+<div class="modal-overlay" id="epiDetailModal">
+  <div class="modal-sheet"></div>
+</div>
+
+<!-- Notification inbox sheet -->
+<div class="bottom-sheet-overlay" id="notifInbox" onclick="if(event.target===this)closeNotifInbox()">
+  <div class="bottom-sheet">
+    <div class="bottom-sheet-header">
+      <div class="bottom-sheet-title">🔔 Notificaciones</div>
+      <div class="bottom-sheet-action" onclick="markAllRead()">Marcar todo leído</div>
+    </div>
+    <div class="bottom-sheet-body notif-inbox" id="notifInboxBody"></div>
   </div>
 </div>
 
-<!-- NOTIFICATION INBOX MODAL -->
-<div id="notifInboxModal" style="display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.45); backdrop-filter:blur(4px);" onclick="if(event.target===this)this.style.display='none'">
-  <div style="position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:440px; background:var(--panel); border-radius:var(--radius-xl) var(--radius-xl) 0 0; padding:22px; padding-bottom:calc(env(safe-area-inset-bottom,12px)+22px); box-shadow:var(--shadow-xl); max-height:70vh; display:flex; flex-direction:column;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <span style="font-size:16px;font-weight:900;color:var(--ink);">📥 Notificaciones</span>
-      <span style="font-size:11px;font-weight:800;color:var(--blue);cursor:pointer;" onclick="markAllNotifRead()">Marcar todo leído</span>
+<!-- Radio channel sheet -->
+<div class="bottom-sheet-overlay" id="radioSheet" onclick="if(event.target===this)closeRadioMenu()">
+  <div class="bottom-sheet">
+    <div class="bottom-sheet-header">
+      <div class="bottom-sheet-title">📻 Canales de Radio</div>
+      <div class="bottom-sheet-action" onclick="closeRadioMenu()">Cerrar</div>
     </div>
-    <div class="notif-inbox" id="notifInboxList"></div>
+    <div class="bottom-sheet-body"></div>
   </div>
 </div>
 
-<!-- NOTIFICATION BANNER -->
-<div class="notif-banner" id="notifBanner" onclick="dismissNotif()">
-  <div class="notif-icon">⚠️</div>
-  <div class="notif-text" id="notifText"></div>
+<!-- Contact detail sheet -->
+<div class="bottom-sheet-overlay" id="contactDetailSheet" onclick="if(event.target===this)closeBSheet('contactDetailSheet')">
+  <div class="bottom-sheet">
+    <div class="bottom-sheet-header">
+      <div class="bottom-sheet-title">👤 Contacto</div>
+      <div class="bottom-sheet-action" onclick="closeBSheet('contactDetailSheet')">Cerrar</div>
+    </div>
+    <div class="bottom-sheet-body"></div>
+  </div>
+</div>
+
+<!-- Notification banner -->
+<div class="notif-banner" id="notifBanner" onclick="this.classList.remove('show')">
+  <div class="notif-icon"></div>
+  <div class="notif-text"></div>
   <div class="notif-close">✕</div>
 </div>
 
-<!-- WORKER CARD (loaded from API) -->
-<div class="worker-card" id="workerCard">
-  <div class="avatar" id="workerAvatar">JL</div>
-  <div class="worker-info">
-    <div class="worker-name" id="workerName">—</div>
-    <div class="worker-role" id="workerRole">Cargando...</div>
-  </div>
-  <div class="live-pill" id="workerStatus">En planta</div>
-</div>
-
-<!-- ═══════ SCREEN 1: MI ZONA ═══════ -->
-<div class="screen active" id="screen-zone">
-  <div class="semaphore yellow" id="mainSemaphore" onclick="showSemaphoreDetail()">
-    <div class="sem-light" id="semLight">⚠</div>
-    <div class="sem-text">
-      <div class="sem-title" id="semTitle">Cargando...</div>
-      <div class="sem-sub" id="semSub"></div>
-    </div>
-  </div>
-
-  <div class="map-section">
-    <div class="section-label">📡 Mapa de planta — <span id="radarZone">cargando</span></div>
-    <div class="plant-map-container" id="plantMap">
-      <div class="map-inner-wrap" id="mapInnerWrap">
-      <img src="/map/planta.png" class="plant-map-img" alt="Complejo San Roque" draggable="false">
-      <svg class="map-svg" id="mapSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <polyline id="escapePath" fill="none" stroke="#0c8de7" stroke-width="0.7" stroke-dasharray="1.8,1.2" stroke-linecap="round" opacity="0">
-          <animate attributeName="stroke-dashoffset" from="0" to="-18" dur="2s" repeatCount="indefinite"/>
-        </polyline>
-      </svg>
-      <div id="radarBlips"></div>
-      <div id="workerDots"></div>
-      <div id="incidentDots" style="display:none;"></div>
-      <div class="user-gps-dot" id="userDot" style="left:34%;top:30%;">
-        <div class="gps-accuracy" id="gpsAccuracy"></div>
-        <div class="gps-dot-inner">👷</div>
-      </div>
-      <div class="muster-marker" id="musterMarker">
-        <div class="muster-marker-inner">🏁</div>
-        <div class="muster-label-text" id="musterLabel">Punto reunión</div>
-      </div>
-      <div class="escape-dist-badge" id="escapeDistBadge"></div>
-      <div class="loto-strip" id="lotoStrip" style="display:none;"></div>
-      <div class="gps-badge" id="gpsBadge"><div class="gps-live"></div> <span id="gpsText">GPS</span></div>
-      </div><!-- /map-inner-wrap -->
-      <div class="map-layers">
-        <div class="map-layer-btn active" onclick="toggleMapLayer('workers',this)">👷 Personas</div>
-        <div class="map-layer-btn active" onclick="toggleMapLayer('hazards',this)">⚠ Riesgos</div>
-        <div class="map-layer-btn" onclick="toggleMapLayer('incidents',this)">📋 Incidencias</div>
-      </div>
-      <div class="map-zoom-controls">
-        <div class="map-zoom-btn" onclick="mapZoomIn()">＋</div>
-        <div class="map-zoom-btn" onclick="mapZoomOut()">−</div>
-        <div class="map-zoom-btn center-btn" onclick="mapCenterUser()">◎</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="hazard-list" id="hazardList">
-    <div class="section-label">Riesgos cerca de ti ahora</div>
-  </div>
-
-  <div class="escape-bar" id="escapeBar" onclick="showEscapeRoute()">
-    <div class="esc-icon-box">🚨</div>
-    <div class="esc-text">
-      <div class="esc-title" id="escTitle">Cargando ruta...</div>
-      <div class="esc-sub" id="escSub"></div>
-    </div>
-    <div class="esc-arrow">›</div>
-  </div>
-</div>
-
-<!-- ═══════ SCREEN 2: MI TAREA ═══════ -->
-<div class="screen" id="screen-task">
-  <div class="can-i-start wait" id="canIStart" onclick="cycleCanIStart()">
-    <div class="cis-icon" id="cisIcon">⏳</div>
-    <div class="cis-title wait" id="cisTitle">Cargando...</div>
-    <div class="cis-reason" id="cisReason"></div>
-  </div>
-
-  <div id="taskPanels"></div>
-</div>
-
-<!-- ═══════ SCREEN 3: ALERTAR ═══════ -->
-<div class="screen" id="screen-alert">
-  <div class="alert-screen-title">Reportar riesgo o incidencia</div>
-  <div class="alert-grid">
-    <div class="alert-btn-big near-miss" onclick="submitReport('near_miss')">
-      <div class="ab-icon">⚠️</div>
-      <div class="ab-title">Near Miss</div>
-      <div class="ab-sub">Algo pudo salir mal</div>
-    </div>
-    <div class="alert-btn-big photo-report" onclick="submitReport('photo')">
-      <div class="ab-icon">📸</div>
-      <div class="ab-title">Foto + Reporte</div>
-      <div class="ab-sub">Captura y describe</div>
-    </div>
-    <div class="alert-btn-big voice-report" onclick="toggleVoice()">
-      <div class="ab-icon">🎙️</div>
-      <div class="ab-title">Nota de Voz</div>
-      <div class="ab-sub">Describe hablando</div>
-    </div>
-    <div class="alert-btn-big positive" onclick="submitReport('positive')">
-      <div class="ab-icon">👍</div>
-      <div class="ab-title">Observación +</div>
-      <div class="ab-sub">Buen comportamiento</div>
-    </div>
-    <div class="alert-btn-big man-down" onclick="triggerEmergency()">
-      <div class="ab-icon">🆘</div>
-      <div class="ab-title">EMERGENCIA / MAN DOWN</div>
-      <div class="ab-sub">Envía ubicación + alerta inmediata</div>
-    </div>
-  </div>
-
-  <div class="voice-recorder" id="voiceRec">
-    <div class="vr-wave">
-      <div class="vr-bar recording"></div><div class="vr-bar recording"></div><div class="vr-bar recording"></div>
-      <div class="vr-bar recording"></div><div class="vr-bar recording"></div><div class="vr-bar recording"></div>
-      <div class="vr-bar recording"></div><div class="vr-bar recording"></div>
-    </div>
-    <div class="vr-time" id="vrTime">0:00</div>
-    <div class="vr-hint">Grabando... Describe lo que ves. La IA lo convertirá en reporte.</div>
-    <button class="vr-stop" onclick="stopVoice()">⏹</button>
-  </div>
-
-  <div class="recent-reports" id="recentReports">
-    <div class="section-label">Tus reportes recientes</div>
-  </div>
-</div>
-
-<!-- ═══════ SCREEN 4: CHAT ═══════ -->
-<div class="screen" id="screen-chat">
-  <div class="chat-screen-wrap">
-    <div class="section-label" style="padding-left:20px;">Contactos</div>
-    <div class="chat-contacts-strip" id="chatContacts"></div>
-    <div class="chat-quick-actions" id="chatQuickActions">
-      <div class="chat-quick-btn" onclick="sendQuickChat('¿Puedo empezar mi tarea?')">¿Puedo empezar?</div>
-      <div class="chat-quick-btn" onclick="sendQuickChat('¿Qué riesgos hay en mi zona?')">Riesgos zona</div>
-      <div class="chat-quick-btn" onclick="sendQuickChat('¿Cuál es mi ruta de evacuación?')">Evacuación</div>
-      <div class="chat-quick-btn" onclick="sendQuickChat('¿Qué EPI necesito?')">EPI</div>
-      <div class="chat-quick-btn" onclick="sendQuickChat('Llévame al taller mecánico')">🧭 Navegar</div>
-    </div>
-    <div class="chat-messages" id="chatMessages"></div>
-    <div class="chat-input-bar">
-      <button class="chat-mic-btn" onclick="toggleChatVoice()">🎙️</button>
-      <input type="text" class="chat-input" id="chatInput" placeholder="Pregunta a SENTINEL..." onkeydown="if(event.key==='Enter')sendChatMessage()">
-      <button class="chat-send-btn" onclick="sendChatMessage()">➤</button>
-    </div>
-  </div>
-</div>
-
-<!-- BOTTOM NAV -->
-<div class="bottom-nav">
-  <div class="nav-item active" data-screen="zone" onclick="switchScreen('zone',this)">
-    <div class="nav-icon">📡</div>Mi Zona
-  </div>
-  <div class="nav-item" data-screen="task" onclick="switchScreen('task',this)">
-    <div class="nav-icon">📋</div>Mi Tarea
-  </div>
-  <div class="nav-item alert-nav" data-screen="alert" onclick="switchScreen('alert',this)">
-    <div class="nav-icon">🚨</div>Alertar
-  </div>
-  <div class="nav-item" data-screen="chat" onclick="switchScreen('chat',this)">
-    <div class="nav-icon">💬</div>Chat
-  </div>
-</div>
-
-<!-- TOAST -->
+<!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <h3 id="modalTitle"></h3>
-    <div id="modalBody"></div>
-    <button class="modal-close" onclick="closeModal()">Cerrar</button>
-  </div>
-</div>
+<!-- App Module -->
+<script type="module" src="/js/app.js"></script>
 
-<script>
-const WORKER_CODE = 'JL';
-const BASE = '';
-
-// ── GPS & Map ──
-const MAP_BOUNDS = { north: 36.1982, south: 36.1918, west: -5.3886, east: -5.3774 };
-let currentPos = { lat: 36.1963, lng: -5.3848 }; // default at H-100
-let gpsWatchId = null;
-let escapeRouteActive = false;
-let escapeWaypoints = [];
-let musterPoint = null;
-let simMode = true;
-let simInterval = null;
-let mapZoomLevel = 1;
-const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
-let mapPanX = 0, mapPanY = 0;
-let mapPinchStart = 0;
-
-// ── Notification state ──
-let notifReadIds = new Set();
-let notifCache = [];
-
-// ── Hazard photo store (demo, client-side) ──
-const hazardPhotos = {};
-
-function mapZoomIn() {
-  mapZoomLevel = Math.min(MAP_ZOOM_MAX, mapZoomLevel + 0.5);
-  applyMapZoom();
-}
-function mapZoomOut() {
-  mapZoomLevel = Math.max(MAP_ZOOM_MIN, mapZoomLevel - 0.5);
-  if (mapZoomLevel === 1) { mapPanX = 0; mapPanY = 0; }
-  applyMapZoom();
-}
-function mapCenterUser() {
-  const pos = gpsToPercent(currentPos.lat, currentPos.lng);
-  mapZoomLevel = 2.5;
-  mapPanX = -(pos.x - 50) * (mapZoomLevel - 1) / mapZoomLevel;
-  mapPanY = -(pos.y - 50) * (mapZoomLevel - 1) / mapZoomLevel;
-  applyMapZoom();
-}
-function applyMapZoom() {
-  const wrap = document.getElementById('mapInnerWrap');
-  if (!wrap) return;
-  wrap.style.transform = `scale(${mapZoomLevel}) translate(${mapPanX}%, ${mapPanY}%)`;
-}
-// Pinch-to-zoom
-document.addEventListener('DOMContentLoaded', () => {
-  const mc = document.getElementById('plantMap');
-  if (!mc) return;
-  let lastDist = 0;
-  mc.addEventListener('touchstart', e => {
-    if (e.touches.length === 2) {
-      lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-    }
-  }, {passive: true});
-  mc.addEventListener('touchmove', e => {
-    if (e.touches.length === 2) {
-      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      const delta = (dist - lastDist) * 0.008;
-      mapZoomLevel = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, mapZoomLevel + delta));
-      if (mapZoomLevel === 1) { mapPanX = 0; mapPanY = 0; }
-      applyMapZoom();
-      lastDist = dist;
-    }
-  }, {passive: true});
-});
-
-function gpsToPercent(lat, lng) {
-  const x = (lng - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west) * 100;
-  const y = (MAP_BOUNDS.north - lat) / (MAP_BOUNDS.north - MAP_BOUNDS.south) * 100;
-  return { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) };
-}
-
-function haversineDistance(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function updateUserDot() {
-  const pos = gpsToPercent(currentPos.lat, currentPos.lng);
-  const dot = document.getElementById('userDot');
-  dot.style.left = pos.x + '%';
-  dot.style.top = pos.y + '%';
-  if (escapeRouteActive) updateEscapePath();
-}
-
-function initGeolocation() {
-  if (!navigator.geolocation) {
-    document.getElementById('gpsText').textContent = 'Simulado';
-    return;
-  }
-  gpsWatchId = navigator.geolocation.watchPosition(
-    (position) => {
-      const { latitude, longitude, accuracy } = position.coords;
-      if (latitude >= MAP_BOUNDS.south && latitude <= MAP_BOUNDS.north &&
-          longitude >= MAP_BOUNDS.west && longitude <= MAP_BOUNDS.east) {
-        currentPos = { lat: latitude, lng: longitude };
-        simMode = false;
-        document.getElementById('gpsText').textContent = '\u00b1' + Math.round(accuracy) + 'm';
-        const accEl = document.getElementById('gpsAccuracy');
-        const accPx = Math.min(100, Math.max(30, accuracy * 3));
-        accEl.style.width = accPx + 'px';
-        accEl.style.height = accPx + 'px';
-      } else {
-        simMode = true;
-        document.getElementById('gpsText').textContent = 'Demo';
-      }
-      updateUserDot();
-    },
-    () => {
-      simMode = true;
-      document.getElementById('gpsText').textContent = 'Demo';
-    },
-    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
-  );
-}
-
-function updateEscapePath() {
-  if (!escapeRouteActive || !musterPoint) return;
-  const userPct = gpsToPercent(currentPos.lat, currentPos.lng);
-  const points = [userPct];
-  escapeWaypoints.forEach(wp => points.push(gpsToPercent(wp[0], wp[1])));
-  points.push(gpsToPercent(musterPoint.lat, musterPoint.lng));
-  const pathStr = points.map(p => p.x + ',' + p.y).join(' ');
-  const pathEl = document.getElementById('escapePath');
-  pathEl.setAttribute('points', pathStr);
-  pathEl.setAttribute('opacity', '1');
-  const dist = haversineDistance(currentPos.lat, currentPos.lng, musterPoint.lat, musterPoint.lng);
-  const badge = document.getElementById('escapeDistBadge');
-  badge.textContent = '\ud83c\udfc1 ' + Math.round(dist) + 'm \u2192 ' + musterPoint.name;
-  badge.style.display = 'block';
-}
-
-function simulateWalk() {
-  if (simInterval) clearInterval(simInterval);
-  const fullPath = [[currentPos.lat, currentPos.lng], ...escapeWaypoints, [musterPoint.lat, musterPoint.lng]];
-  let step = 0;
-  const stepsPerSeg = 25;
-  const totalSteps = (fullPath.length - 1) * stepsPerSeg;
-  simInterval = setInterval(() => {
-    if (!escapeRouteActive || step >= totalSteps) {
-      clearInterval(simInterval); simInterval = null;
-      if (step >= totalSteps && escapeRouteActive) showToast('\ud83c\udfc1 Has llegado al punto de reuni\u00f3n');
-      return;
-    }
-    const seg = Math.floor(step / stepsPerSeg);
-    const t = (step % stepsPerSeg) / stepsPerSeg;
-    if (seg < fullPath.length - 1) {
-      currentPos.lat = fullPath[seg][0] + t * (fullPath[seg+1][0] - fullPath[seg][0]);
-      currentPos.lng = fullPath[seg][1] + t * (fullPath[seg+1][1] - fullPath[seg][1]);
-      updateUserDot();
-    }
-    step++;
-  }, 250);
-}
-
-// ── Helpers ──
-async function api(path, opts) {
-  const res = await fetch(BASE + path, opts);
-  return res.json();
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-function closeModal() { document.getElementById('modal').classList.remove('active'); }
-
-function switchScreen(name, el) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
-  el.classList.add('active');
-  window.scrollTo({top: 0, behavior: 'smooth'});
-  // Refresh data on switch
-  if (name === 'zone') loadZoneScreen();
-  if (name === 'task') loadTaskScreen();
-  if (name === 'alert') loadReports();
-  if (name === 'chat') { loadChatContacts(); }
-}
-
-// ── Load worker ──
-async function loadWorker() {
-  const w = await api('/api/worker/' + WORKER_CODE);
-  document.getElementById('workerAvatar').textContent = w.code;
-  document.getElementById('workerName').textContent = w.name;
-  document.getElementById('workerRole').textContent = `${w.role} · ${w.company} · ${w.team}`;
-  document.getElementById('workerStatus').textContent = w.status === 'active' ? 'En planta' : w.status;
-}
-
-// ── SCREEN 1: MI ZONA ──
-async function loadZoneScreen() {
-  // Semaphore
-  const sem = await api('/api/semaphore');
-  const semEl = document.getElementById('mainSemaphore');
-  semEl.className = 'semaphore ' + sem.level;
-  const icons = { red: '🆘', yellow: '⚠', green: '✅' };
-  document.getElementById('semLight').textContent = icons[sem.level] || '⚠';
-  document.getElementById('semTitle').textContent = sem.title || '';
-  document.getElementById('semSub').textContent = sem.subtitle || '';
-
-  // Hazards
-  const hazards = await api('/api/hazards?zone_id=1&active=true');
-  const blipsEl = document.getElementById('radarBlips');
-  const listEl = document.getElementById('hazardList');
-
-  document.getElementById('radarZone').textContent = 'Complejo San Roque';
-
-  blipsEl.innerHTML = '';
-  listEl.innerHTML = '<div class="section-label">Riesgos cerca de ti ahora</div>';
-
-  const typeIcons = { hot_work: '🔥', crane: '🏗️', confined_space: '⛔', electrical: '⚡', team: '👥' };
-  const typeClasses = { hot_work: 'hot', crane: 'crane', confined_space: 'confined', electrical: 'confined', team: 'team' };
-
-  hazards.forEach((h) => {
-    const cls = typeClasses[h.type] || 'team';
-    const icon = typeIcons[h.type] || '⚠';
-
-    // Position blip on map using GPS coordinates
-    if (h.lat && h.lng) {
-      const pos = gpsToPercent(h.lat, h.lng);
-      const blip = document.createElement('div');
-      blip.className = 'hazard-blip';
-      blip.style.left = pos.x + '%';
-      blip.style.top = pos.y + '%';
-      blip.onclick = () => openHazardModal(h);
-      blip.innerHTML = '<div class="blip-icon ' + cls + '">' + icon + '</div><div class="blip-label">' + h.distance_m + 'm · ' + h.direction + '</div>';
-      blipsEl.appendChild(blip);
-    }
-
-    // LOTO strip
-    if (h.type === 'electrical') {
-      const loto = document.getElementById('lotoStrip');
-      loto.style.display = 'flex';
-      loto.innerHTML = '⚡ ' + h.title + ' — ' + h.action_required;
-      return;
-    }
-
-    // List card
-    const severityClass = h.distance_m <= 10 ? 'close' : h.distance_m <= 20 ? 'medium' : 'far';
-    let actionClass = 'ok', actionText = '✓ Sin interferencia';
-    if (h.severity === 'high' || h.severity === 'critical') {
-      if (h.type === 'crane') { actionClass = 'avoid'; actionText = '🚫 ' + h.action_required; }
-      else { actionClass = 'caution'; actionText = '⚠ ' + h.action_required; }
-    }
-
-    const card = document.createElement('div');
-    card.className = 'hazard-card';
-    card.onclick = () => openHazardModal(h);
-    card.innerHTML = `
-      <div class="h-icon-box ${cls}">${icon}</div>
-      <div class="h-content">
-        <div class="h-title">${h.title}</div>
-        <div class="h-meta"><strong>${h.company}</strong> · ${h.start_time}–${h.end_time}<br>${h.description || ''}</div>
-        <div class="h-action-pill ${actionClass}">${actionText}</div>
-      </div>
-      <div class="h-dist ${severityClass}">${h.distance_m}m<small>${h.direction}</small></div>
-    `;
-    listEl.appendChild(card);
-  });
-
-  // Escape route
-  const routes = await api('/api/escape/1');
-  if (routes.length > 0) {
-    const r = routes[0];
-    document.getElementById('escTitle').textContent = r.muster_point + ' — ' + r.distance_m + 'm';
-    document.getElementById('escSub').textContent = r.route_description + (r.route_clear ? ' · Ruta libre ✓' : ' · ⚠ Verificar ruta');
-  }
-
-  // Position user dot
-  updateUserDot();
-
-  // Load workers and incidents on map
-  loadWorkersOnMap();
-  loadIncidentsOnMap();
-}
-
-function openHazardModal(h) {
-  const icons = { hot_work: '🔥', crane: '🏗️', confined_space: '⛔', electrical: '⚡' };
-  document.getElementById('modalTitle').textContent = (icons[h.type]||'⚠') + ' ' + h.title;
-
-  const photos = hazardPhotos[h.id] || [];
-  let photosHtml = `<div class="hazard-photos"><div class="hazard-photos-title">📷 Evidencias fotográficas (${photos.length})</div>`;
-  if (photos.length > 0) {
-    photosHtml += '<div class="hazard-photo-grid">';
-    photos.forEach(p => {
-      photosHtml += `<div class="hazard-photo-item"><img class="hazard-photo-img" src="${p.data}" alt="Evidencia"><div class="hazard-photo-meta"><div class="hazard-photo-avatar" style="background:${AVATAR_COLORS[p.code]||'var(--gradient-brand)'}">${p.code}</div>${p.name}</div></div>`;
-    });
-    photosHtml += '</div>';
-  }
-  photosHtml += `<label class="hazard-photo-upload" onclick="event.stopPropagation()">📷 Añadir foto<input type="file" accept="image/*" multiple onchange="handleHazardPhotos(event,${h.id})"></label></div>`;
-
-  document.getElementById('modalBody').innerHTML = `
-    <p><strong>Empresa:</strong> ${h.company}</p>
-    <p><strong>Horario:</strong> ${h.start_time} – ${h.end_time}</p>
-    <p><strong>Distancia:</strong> ${h.distance_m}m, dirección ${h.direction}</p>
-    <p><strong>Descripción:</strong> ${h.description || '—'}</p>
-    <p style="margin-top:12px; padding:14px; border-radius:14px; background:rgba(219,74,67,.04); border:1px solid rgba(219,74,67,.1); font-weight:700; color:#8b362d;">
-      Tu acción: ${h.action_required}
-    </p>
-    ${photosHtml}
-  `;
-  document.getElementById('modal').classList.add('active');
-}
-
-function handleHazardPhotos(event, hazardId) {
-  const files = event.target.files;
-  if (!files.length) return;
-  if (!hazardPhotos[hazardId]) hazardPhotos[hazardId] = [];
-  Array.from(files).forEach(file => {
-    if (file.size > 5 * 1024 * 1024) { showToast('Archivo demasiado grande (máx 5MB)'); return; }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      hazardPhotos[hazardId].push({ data: e.target.result, code: WORKER_CODE, name: 'J. López', time: new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) });
-      showToast('📷 Foto añadida');
-      // Refresh modal
-      api('/api/hazards?zone_id=1&active=true').then(hazards => {
-        const h = hazards.find(hz => hz.id === hazardId);
-        if (h) openHazardModal(h);
-      });
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function showSemaphoreDetail() {
-  document.getElementById('modalTitle').textContent = 'Estado de tu zona';
-  api('/api/hazards?zone_id=1&active=true').then(hazards => {
-    let body = `<p><strong>${hazards.length} riesgo(s) activo(s)</strong> en tu zona ahora:</p>`;
-    hazards.forEach(h => {
-      const color = h.severity === 'high' || h.severity === 'critical' ? 'var(--danger)' : 'var(--ink-soft)';
-      body += `<p style="color:${color}; font-weight:700; margin-top:8px;">• ${h.title} — ${h.distance_m}m ${h.direction}</p>`;
-    });
-    body += '<p style="margin-top:16px; color:var(--ink-soft);">El semáforo se actualiza automáticamente cuando los riesgos se resuelven.</p>';
-    document.getElementById('modalBody').innerHTML = body;
-    document.getElementById('modal').classList.add('active');
-  });
-}
-
-function showEscapeRoute() {
-  escapeRouteActive = !escapeRouteActive;
-  const screen = document.getElementById('screen-zone');
-  if (escapeRouteActive) {
-    screen.classList.add('escape-active');
-    api('/api/escape/1').then(routes => {
-      if (!routes.length) { showToast('Sin rutas disponibles'); escapeRouteActive = false; return; }
-      const r = routes[0];
-      musterPoint = { lat: r.dest_lat, lng: r.dest_lng, name: r.muster_point };
-      escapeWaypoints = r.waypoints ? JSON.parse(r.waypoints) : [];
-      // Show muster marker
-      const mPos = gpsToPercent(musterPoint.lat, musterPoint.lng);
-      const mm = document.getElementById('musterMarker');
-      mm.style.left = mPos.x + '%';
-      mm.style.top = mPos.y + '%';
-      mm.style.display = 'flex';
-      document.getElementById('musterLabel').textContent = musterPoint.name;
-      updateEscapePath();
-      showToast('🏁 Ruta de evacuación activada — sigue la línea azul');
-      // Scroll map into view
-      document.getElementById('plantMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Simulate walking in demo mode
-      if (simMode) setTimeout(() => simulateWalk(), 2500);
-    });
-  } else {
-    screen.classList.remove('escape-active');
-    document.getElementById('musterMarker').style.display = 'none';
-    document.getElementById('escapeDistBadge').style.display = 'none';
-    document.getElementById('escapePath').setAttribute('opacity', '0');
-    if (simInterval) { clearInterval(simInterval); simInterval = null; }
-    // Reset position to H-100
-    currentPos = { lat: 36.1963, lng: -5.3848 };
-    updateUserDot();
-    showToast('Ruta de evacuación desactivada');
-  }
-}
-
-// ── SCREEN 2: MI TAREA ──
-async function loadTaskScreen() {
-  // Can I start?
-  const cis = await api('/api/can-i-start/' + WORKER_CODE);
-  const cisBtn = document.getElementById('canIStart');
-  cisBtn.className = 'can-i-start ' + cis.status;
-  document.getElementById('cisIcon').textContent = cis.icon;
-  const cisTitle = document.getElementById('cisTitle');
-  cisTitle.className = 'cis-title ' + cis.status;
-  const titles = { ready: 'PUEDES EMPEZAR', wait: 'ESPERA', blocked: 'NO PUEDES EMPEZAR' };
-  cisTitle.textContent = titles[cis.status] || cis.status;
-  document.getElementById('cisReason').innerHTML = cis.reason;
-
-  // Tasks
-  const tasks = await api('/api/tasks/' + WORKER_CODE);
-  const container = document.getElementById('taskPanels');
-  container.innerHTML = '';
-
-  tasks.forEach(t => {
-    const epi = t.epi_required ? JSON.parse(t.epi_required) : [];
-    const controls = t.critical_controls ? JSON.parse(t.critical_controls) : [];
-    const colorMap = { high: 'var(--danger)', medium: 'var(--blue)', low: 'var(--success)' };
-    const riskColor = colorMap[t.risk_level] || 'var(--blue)';
-
-    let controlsHtml = '';
-    if (controls.length > 0) {
-      controlsHtml = `<div class="tp-section"><div class="tp-section-title">✅ Controles críticos</div>`;
-      controls.forEach((c, i) => {
-        const state = i < 3 ? 'checked' : (i < 5 ? 'pending' : 'blocked');
-        controlsHtml += `<div class="check-item ${state}" onclick="toggleCheck(this)"><div class="check-box">${state==='checked'?'✓':''}</div><span>${c}</span></div>`;
-      });
-      controlsHtml += '</div>';
-    }
-
-    let epiHtml = '';
-    if (epi.length > 0) {
-      const epiImages = {
-        'Casco':'https://cdn-icons-png.flaticon.com/128/2345/2345547.png',
-        'Guantes':'https://cdn-icons-png.flaticon.com/128/1066/1066711.png',
-        'Guantes anticorte':'https://cdn-icons-png.flaticon.com/128/1066/1066711.png',
-        'Botas S3':'https://cdn-icons-png.flaticon.com/128/2589/2589903.png',
-        'Arnés':'https://cdn-icons-png.flaticon.com/128/3209/3209265.png',
-        'Arnés + línea vida':'https://cdn-icons-png.flaticon.com/128/3209/3209265.png',
-        'Protección auditiva':'https://cdn-icons-png.flaticon.com/128/5038/5038856.png',
-        'Respirador ABE1':'https://cdn-icons-png.flaticon.com/128/2913/2913250.png',
-        'Gafas':'https://cdn-icons-png.flaticon.com/128/2750/2750221.png'
-      };
-      const epiEmoji = {'Casco':'🪖','Guantes':'🧤','Guantes anticorte':'🧤','Botas S3':'👢','Arnés':'🔗','Arnés + línea vida':'🔗','Protección auditiva':'👂','Respirador ABE1':'🫁','Gafas':'👓'};
-      epiHtml = '<div class="tp-section"><div class="tp-section-title">🦺 EPI obligatorio</div><div class="epi-grid-v2">';
-      epi.forEach(e => {
-        const isCritical = e.includes('Respirador');
-        const imgUrl = epiImages[e];
-        const emoji = epiEmoji[e] || '🦺';
-        epiHtml += `<div class="epi-card-v2 ${isCritical?'critical':''}">
-          <div class="epi-v2-img">${imgUrl ? `<img src="${imgUrl}" alt="${e}" onerror="this.parentElement.textContent='${emoji}'">` : emoji}</div>
-          <div class="epi-v2-body"><div class="epi-v2-label">${e}</div>${isCritical?'<div class="epi-v2-tag">⚠ 08–10h</div>':''}</div>
-        </div>`;
-      });
-      epiHtml += '</div></div>';
-    }
-
-    const panel = document.createElement('div');
-    panel.className = 'task-detail';
-    panel.innerHTML = `
-      <div class="task-panel">
-        <div class="tp-header">
-          <div class="tp-color" style="background:${riskColor};"></div>
-          <div class="tp-info">
-            <div class="tp-title">${t.title}</div>
-            <div class="tp-loc">📍 ${t.zone_name || ''} · ${t.description || ''}</div>
-            <div class="tp-time">${t.start_time} – ${t.end_time}${t.permit_code ? ' · ' + t.permit_code : ''}</div>
-          </div>
-        </div>
-        ${controlsHtml}
-        ${epiHtml}
-      </div>
-    `;
-    container.appendChild(panel);
-  });
-}
-
-let cisState = 0;
-function cycleCanIStart() {
-  cisState = (cisState + 1) % 3;
-  const states = ['wait', 'ready', 'blocked'];
-  const icons = ['⏳', '✅', '🛑'];
-  const titles = ['ESPERA — Izado activo hasta 08:15', 'PUEDES EMPEZAR', 'NO PUEDES EMPEZAR'];
-  const reasons = [
-    'La grúa 40T opera en Nivel 3 con zona de exclusión.<br><strong>Usa la escalera oeste para el andamio (06:30). Tarea principal a las 08:15.</strong>',
-    'Todos los controles verificados. Zona despejada.<br><strong>Recuerda: respirador ABE1 continuo hasta las 10:00.</strong>',
-    'Falta verificación del andamio (tag verde).<br><strong>Contacta con tu supervisor antes de acceder.</strong>'
-  ];
-  const btn = document.getElementById('canIStart');
-  btn.className = 'can-i-start ' + states[cisState];
-  document.getElementById('cisIcon').textContent = icons[cisState];
-  const t = document.getElementById('cisTitle');
-  t.className = 'cis-title ' + states[cisState];
-  t.textContent = titles[cisState];
-  document.getElementById('cisReason').innerHTML = reasons[cisState];
-}
-
-function toggleCheck(el) {
-  if (el.classList.contains('blocked')) { showToast('⏳ Este control se desbloquea a las 08:15'); return; }
-  el.classList.toggle('checked');
-  el.classList.remove('pending');
-  const box = el.querySelector('.check-box');
-  box.textContent = el.classList.contains('checked') ? '✓' : '';
-}
-
-// ── SCREEN 3: ALERTAR ──
-async function loadReports() {
-  const reports = await api('/api/reports/' + WORKER_CODE);
-  const container = document.getElementById('recentReports');
-  container.innerHTML = '<div class="section-label">Tus reportes recientes</div>';
-
-  const typeIcons = { near_miss: '⚠️', photo: '📸', voice: '🎙️', positive: '👍', emergency: '🆘' };
-  reports.forEach(r => {
-    const item = document.createElement('div');
-    item.className = 'rr-item';
-    const statusClass = r.status === 'resolved' ? 'sent' : 'processing';
-    const statusText = r.status === 'resolved' ? 'Resuelto' : r.status === 'sent' ? 'Enviado' : 'En revisión';
-    item.innerHTML = `
-      <div class="rr-icon">${typeIcons[r.type] || '📝'}</div>
-      <div class="rr-content">
-        <div class="rr-text">${r.description || r.ai_summary || r.type}</div>
-        <div class="rr-meta">${new Date(r.created_at).toLocaleDateString('es')} · ${r.zone_name || ''} · ${r.category || ''}</div>
-      </div>
-      <div class="rr-status ${statusClass}">${statusText}</div>
-    `;
-    container.appendChild(item);
-  });
-}
-
-async function submitReport(type) {
-  let description = '';
-  if (type === 'near_miss') description = prompt('Describe brevemente el near miss:');
-  else if (type === 'photo') description = prompt('Descripción de la foto:');
-  else if (type === 'positive') description = prompt('¿Qué buen comportamiento observaste?');
-
-  if (description === null) return; // cancelled
-
-  const result = await api('/api/reports', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ worker_code: WORKER_CODE, type, description, zone_id: 1, media_type: type === 'photo' ? 'photo' : 'text' })
-  });
-  showToast(`✓ Reporte ${type} enviado. Categorizado: ${result.category}`);
-  loadReports();
-}
-
-let voiceTimer = null, voiceSecs = 0;
-function toggleVoice() {
-  const rec = document.getElementById('voiceRec');
-  rec.classList.add('active');
-  voiceSecs = 0;
-  document.getElementById('vrTime').textContent = '0:00';
-  voiceTimer = setInterval(() => {
-    voiceSecs++;
-    document.getElementById('vrTime').textContent = Math.floor(voiceSecs/60) + ':' + String(voiceSecs%60).padStart(2,'0');
-  }, 1000);
-}
-async function stopVoice() {
-  clearInterval(voiceTimer);
-  document.getElementById('voiceRec').classList.remove('active');
-  showToast(`✓ Nota de voz (${voiceSecs}s). IA procesando...`);
-  const result = await api('/api/reports', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ worker_code: WORKER_CODE, type: 'voice', description: 'Nota de voz — procesando transcripción IA', zone_id: 1, media_type: 'voice' })
-  });
-  setTimeout(() => showToast('📋 Reporte generado y auto-categorizado: ' + result.category), 2000);
-  loadReports();
-}
-
-async function triggerEmergency() {
-  await api('/api/emergency', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ worker_code: WORKER_CODE }) });
-  document.body.style.animation = 'flashRed .5s 3';
-  showToast('🆘 EMERGENCIA — Ubicación enviada a supervisores y emergencias');
-  setTimeout(() => { document.body.style.animation = ''; loadZoneScreen(); }, 4000);
-}
-
-// ── WORKERS & INCIDENTS ON MAP ──
-const AVATAR_COLORS = {JL:'linear-gradient(135deg,#0c8de7,#88eeb9)',AR:'linear-gradient(135deg,#d289ff,#6c3483)',PS:'linear-gradient(135deg,#ffb24a,#e67e22)',ML:'linear-gradient(135deg,#0c8de7,#102033)',FC:'linear-gradient(135deg,#ff87a5,#c0392b)',IG:'linear-gradient(135deg,#95efba,#1f9b6f)'};
-let mapLayers = { workers: true, hazards: true, incidents: false };
-let activePopup = null;
-
-function toggleMapLayer(layer, btn) {
-  mapLayers[layer] = !mapLayers[layer];
-  btn.classList.toggle('active', mapLayers[layer]);
-  if (layer === 'workers') document.getElementById('workerDots').style.display = mapLayers.workers ? '' : 'none';
-  if (layer === 'hazards') document.getElementById('radarBlips').style.display = mapLayers.hazards ? '' : 'none';
-  if (layer === 'incidents') {
-    document.getElementById('incidentDots').style.display = mapLayers.incidents ? '' : 'none';
-    if (mapLayers.incidents) loadIncidentsOnMap();
-  }
-}
-
-async function loadWorkersOnMap() {
-  const workers = await api('/api/workers-map');
-  const container = document.getElementById('workerDots');
-  container.innerHTML = '';
-  workers.forEach(w => {
-    if (w.code === WORKER_CODE || !w.lat || !w.lng) return;
-    const pos = gpsToPercent(w.lat, w.lng);
-    const dot = document.createElement('div');
-    dot.className = 'worker-map-dot';
-    dot.style.left = pos.x + '%';
-    dot.style.top = pos.y + '%';
-    dot.onclick = (e) => { e.stopPropagation(); showWorkerPopup(w, dot); };
-    dot.innerHTML = `<div class="wmd-circle" style="background:${AVATAR_COLORS[w.code]||'var(--gradient-brand)'}">${w.code}</div><div class="wmd-name">${w.name.split(' ')[0]}</div>`;
-    container.appendChild(dot);
-  });
-}
-
-function showWorkerPopup(worker, dotEl) {
-  if (activePopup) activePopup.remove();
-  const popup = document.createElement('div');
-  popup.className = 'worker-popup';
-  popup.innerHTML = `
-    <div class="wp-name">${worker.name}</div>
-    <div class="wp-role">${worker.role} · ${worker.company}</div>
-    <div class="wp-actions">
-      <div class="wp-action chat-action" onclick="event.stopPropagation();openWorkerChat('${worker.code}')">💬 Chat</div>
-      <div class="wp-action" onclick="event.stopPropagation();showToast('📞 Llamando a ${worker.name.split(' ')[0]}...')">📞 Llamar</div>
-    </div>
-  `;
-  dotEl.appendChild(popup);
-  activePopup = popup;
-  const closeHandler = (e) => {
-    if (!dotEl.contains(e.target)) { popup.remove(); activePopup = null; document.removeEventListener('click', closeHandler); }
-  };
-  setTimeout(() => document.addEventListener('click', closeHandler), 50);
-}
-
-function openWorkerChat(code) {
-  const nav = document.querySelector('[data-screen="chat"]');
-  switchScreen('chat', nav);
-  setTimeout(() => {
-    chatTarget = code;
-    document.querySelectorAll('.chat-contact').forEach(c => c.classList.remove('active'));
-    const contacts = document.querySelectorAll('.chat-contact');
-    contacts.forEach(c => { if (c.dataset.code === code) c.classList.add('active'); });
-    document.getElementById('chatInput').placeholder = 'Mensaje...';
-    document.getElementById('chatQuickActions').style.display = 'none';
-    renderChatHistory();
-  }, 150);
-}
-
-async function loadIncidentsOnMap() {
-  const incidents = await api('/api/incidents-map');
-  const container = document.getElementById('incidentDots');
-  container.innerHTML = '';
-  const icons = { near_miss: '⚠', photo: '📸', voice: '🎙', positive: '👍', emergency: '🆘' };
-  incidents.forEach(inc => {
-    if (!inc.lat || !inc.lng) return;
-    const pos = gpsToPercent(inc.lat, inc.lng);
-    const dot = document.createElement('div');
-    dot.className = 'incident-map-dot';
-    dot.style.left = pos.x + '%';
-    dot.style.top = pos.y + '%';
-    dot.onclick = () => {
-      document.getElementById('modalTitle').textContent = (icons[inc.type]||'📋') + ' Incidencia reportada';
-      document.getElementById('modalBody').innerHTML = `
-        <p><strong>Reportado por:</strong> ${inc.worker_name || 'Anónimo'}</p>
-        <p><strong>Tipo:</strong> ${inc.type} · ${inc.category || ''}</p>
-        <p><strong>Descripción:</strong> ${inc.description || inc.ai_summary || '—'}</p>
-        <p><strong>Zona:</strong> ${inc.zone_name || '—'}</p>
-        <p style="font-size:11px;color:var(--ink-faint);margin-top:8px;">${new Date(inc.created_at).toLocaleString('es')}</p>
-      `;
-      document.getElementById('modal').classList.add('active');
-    };
-    dot.innerHTML = `<div class="imd-circle">${icons[inc.type]||'📋'}</div><div class="imd-label">${(inc.description||inc.type).substring(0,20)}</div>`;
-    container.appendChild(dot);
-  });
-}
-
-// ── SCREEN 4: CHAT ──
-let chatTarget = 'SENTINEL_AI';
-let chatHistory = {};
-let chatWorkersList = [];
-
-async function loadChatContacts() {
-  const workers = await api('/api/workers-map');
-  chatWorkersList = workers.filter(w => w.code !== WORKER_CODE);
-  const strip = document.getElementById('chatContacts');
-  strip.innerHTML = `
-    <div class="chat-contact active" data-code="SENTINEL_AI" onclick="selectChatContact('SENTINEL_AI', this)">
-      <div class="cc-avatar ai">🤖<div class="cc-online"></div></div>
-      <div class="cc-name">SENTINEL</div>
-    </div>
-    <div class="chat-contact" data-code="SUPERVISOR" onclick="selectChatContact('SUPERVISOR', this)">
-      <div class="cc-avatar" style="background:linear-gradient(135deg,#102033,#0c8de7)">MG<div class="cc-online"></div></div>
-      <div class="cc-name">Supervisor</div>
-    </div>
-  `;
-  chatWorkersList.forEach(w => {
-    const c = document.createElement('div');
-    c.className = 'chat-contact';
-    c.dataset.code = w.code;
-    c.onclick = () => selectChatContact(w.code, c);
-    c.innerHTML = `<div class="cc-avatar" style="background:${AVATAR_COLORS[w.code]||'var(--gradient-brand)'}">${w.code}<div class="cc-online"></div></div><div class="cc-name">${w.name.split(' ')[0]}</div>`;
-    strip.appendChild(c);
-  });
-  renderChatHistory();
-}
-
-function selectChatContact(code, el) {
-  chatTarget = code;
-  document.querySelectorAll('.chat-contact').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  const input = document.getElementById('chatInput');
-  if (code === 'SENTINEL_AI') input.placeholder = 'Pregunta a SENTINEL...';
-  else if (code === 'SUPERVISOR') input.placeholder = 'Mensaje al supervisor...';
-  else input.placeholder = 'Mensaje...';
-  document.getElementById('chatQuickActions').style.display = code === 'SENTINEL_AI' ? 'flex' : 'none';
-  renderChatHistory();
-}
-
-function renderChatHistory() {
-  const container = document.getElementById('chatMessages');
-  const history = chatHistory[chatTarget] || [];
-  if (history.length === 0) {
-    let welcome = '';
-    if (chatTarget === 'SENTINEL_AI') {
-      welcome = '¡Hola! 👋 Soy SENTINEL, tu copiloto de seguridad. Puedo ayudarte con riesgos en tu zona, permisos, rutas de evacuación y más.';
-    } else if (chatTarget === 'SUPERVISOR') {
-      welcome = 'Canal directo con M. García (Supervisor de turno). Los mensajes se envían en tiempo real. 📻 Radio: Canal 7';
-    } else {
-      const w = chatWorkersList.find(w => w.code === chatTarget);
-      welcome = w ? `Canal con ${w.name} (${w.role} · ${w.company}). Zona: ${w.zone_name || '—'}` : 'Chat';
-    }
-    container.innerHTML = `<div class="chat-msg received"><div class="chat-msg-bubble">${welcome}</div><div class="chat-msg-meta">Ahora</div></div>`;
-    return;
-  }
-  container.innerHTML = '';
-  history.forEach(m => {
-    const msg = document.createElement('div');
-    msg.className = 'chat-msg ' + (m.from === WORKER_CODE ? 'sent' : 'received');
-    msg.innerHTML = `<div class="chat-msg-bubble">${m.text}</div><div class="chat-msg-meta">${m.time}</div>`;
-    container.appendChild(msg);
-  });
-  container.scrollTop = container.scrollHeight;
-}
-
-function addChatMessage(from, text) {
-  if (!chatHistory[chatTarget]) chatHistory[chatTarget] = [];
-  const time = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-  chatHistory[chatTarget].push({ from, text, time });
-  renderChatHistory();
-}
-
-async function sendChatMessage() {
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  addChatMessage(WORKER_CODE, text);
-
-  if (chatTarget === 'SENTINEL_AI') {
-    showChatTyping();
-    try {
-      const result = await api('/api/chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ worker_code: WORKER_CODE, message: text })
-      });
-      hideChatTyping();
-      addChatMessage('SENTINEL_AI', result.response);
-      // Pathfinding: if AI returns navigation target, show route on map
-      if (result.navigate) {
-        const nav = result.navigate;
-        musterPoint = { lat: nav.lat, lng: nav.lng, name: nav.name };
-        escapeWaypoints = [];
-        // Generate simple intermediate waypoints
-        const steps = 6;
-        for (let i = 1; i < steps; i++) {
-          const t = i / steps;
-          const wLat = currentPos.lat + t * (nav.lat - currentPos.lat) + (Math.random() - 0.5) * 0.0004;
-          const wLng = currentPos.lng + t * (nav.lng - currentPos.lng) + (Math.random() - 0.5) * 0.0004;
-          escapeWaypoints.push([wLat, wLng]);
-        }
-        escapeRouteActive = true;
-        const mPos = gpsToPercent(musterPoint.lat, musterPoint.lng);
-        const mm = document.getElementById('musterMarker');
-        mm.style.left = mPos.x + '%';
-        mm.style.top = mPos.y + '%';
-        mm.style.display = 'flex';
-        document.getElementById('musterLabel').textContent = musterPoint.name;
-        updateEscapePath();
-        // Switch to map view
-        setTimeout(() => {
-          const navEl = document.querySelector('[data-screen="zone"]');
-          switchScreen('zone', navEl);
-          document.getElementById('plantMap').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          if (simMode) setTimeout(() => simulateWalk(), 1500);
-        }, 800);
-      }
-    } catch(e) {
-      hideChatTyping();
-      addChatMessage('SENTINEL_AI', 'Error de conexión. Intenta de nuevo.');
-    }
-  } else if (chatTarget === 'SUPERVISOR') {
-    setTimeout(() => {
-      const responses = ['Recibido. Reviso y te confirmo. 👍', 'OK, lo gestiono. Espera mi confirmación.', 'Enterado. Voy a verificar la zona.'];
-      addChatMessage('SUPERVISOR', responses[Math.floor(Math.random() * responses.length)]);
-    }, 1500 + Math.random() * 2500);
-  } else {
-    setTimeout(() => {
-      const responses = ['Enterado, gracias. 👍', 'OK, lo tengo en cuenta.', 'Recibido. Estoy en la zona.', 'Sí, confirmo. Cualquier cosa me dices.'];
-      addChatMessage(chatTarget, responses[Math.floor(Math.random() * responses.length)]);
-    }, 1200 + Math.random() * 2500);
-  }
-}
-
-function sendQuickChat(text) {
-  document.getElementById('chatInput').value = text;
-  sendChatMessage();
-}
-
-function showChatTyping() {
-  const container = document.getElementById('chatMessages');
-  const typing = document.createElement('div');
-  typing.id = 'chatTypingIndicator';
-  typing.className = 'chat-typing';
-  typing.innerHTML = '<div class="chat-typing-dot"></div><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div>';
-  container.appendChild(typing);
-  container.scrollTop = container.scrollHeight;
-}
-
-function hideChatTyping() {
-  const el = document.getElementById('chatTypingIndicator');
-  if (el) el.remove();
-}
-
-function toggleChatVoice() {
-  showToast('🎙️ Dictado por voz — habla ahora');
-  setTimeout(() => {
-    document.getElementById('chatInput').value = '¿Hay algún riesgo nuevo en mi zona?';
-    showToast('✓ Texto reconocido');
-  }, 2000);
-}
-
-// ── NOTIFICATIONS ──
-let lastIncidentCount = 0;
-let notifPollInterval = null;
-
-function startNotificationPoll() {
-  notifPollInterval = setInterval(async () => {
-    try {
-      const incidents = await api('/api/incidents-map');
-      if (lastIncidentCount > 0 && incidents.length > lastIncidentCount) {
-        const newest = incidents[0];
-        if (newest.lat && newest.lng) {
-          const dist = haversineDistance(currentPos.lat, currentPos.lng, newest.lat, newest.lng);
-          if (dist < 200) {
-            showNotification(`⚠️ Nueva incidencia a ${Math.round(dist)}m: ${(newest.description||newest.type).substring(0,50)}`);
-            // Refresh map if on zone screen
-            if (document.getElementById('screen-zone').classList.contains('active')) {
-              if (mapLayers.incidents) loadIncidentsOnMap();
-            }
-          }
-        }
-      }
-      lastIncidentCount = incidents.length;
-      // Update bell dot — fetch notification count
-      try {
-        const notifs = await api('/api/notifications');
-        notifCache = notifs;
-        updateBellDot();
-      } catch(e2) {}
-    } catch(e) {}
-  }, 15000);
-}
-
-function showNotification(text) {
-  const banner = document.getElementById('notifBanner');
-  document.getElementById('notifText').textContent = text;
-  banner.classList.add('show');
-  setTimeout(() => banner.classList.remove('show'), 8000);
-}
-
-function dismissNotif() {
-  document.getElementById('notifBanner').classList.remove('show');
-}
-
-// ── Notification Inbox ──
-async function openNotifInbox() {
-  const modal = document.getElementById('notifInboxModal');
-  modal.style.display = 'block';
-  const list = document.getElementById('notifInboxList');
-  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-faint);">Cargando...</div>';
-  try {
-    const notifs = await api('/api/notifications');
-    notifCache = notifs;
-    renderNotifInbox();
-  } catch(e) {
-    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-faint);">Error cargando notificaciones</div>';
-  }
-}
-
-function renderNotifInbox() {
-  const list = document.getElementById('notifInboxList');
-  if (notifCache.length === 0) {
-    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-faint);">Sin notificaciones 🎉</div>';
-    return;
-  }
-  list.innerHTML = '';
-  const iconClasses = {'⚠️':'hazard','🔴':'conflict','👷':'workers','📋':'report','🦺':'hazard','🏁':'workers'};
-  notifCache.forEach((n, i) => {
-    const isRead = notifReadIds.has(n.id || i);
-    const item = document.createElement('div');
-    item.className = 'notif-inbox-item' + (isRead ? '' : ' unread');
-    item.onclick = () => { markNotifRead(n.id || i); };
-    const timeStr = n.time ? new Date(n.time).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : 'Ahora';
-    item.innerHTML = `
-      ${isRead ? '' : '<div class="ni-unread-dot"></div>'}
-      <div class="ni-icon ${iconClasses[n.icon]||''}">${n.icon}</div>
-      <div class="ni-content">
-        <div class="ni-title">${n.title}</div>
-        <div class="ni-detail">${n.detail || ''}</div>
-      </div>
-      <div class="ni-time">${timeStr}</div>
-    `;
-    list.appendChild(item);
-  });
-  updateBellDot();
-}
-
-function markNotifRead(id) {
-  notifReadIds.add(id);
-  renderNotifInbox();
-  updateBellDot();
-}
-
-function markAllNotifRead() {
-  notifCache.forEach((n, i) => notifReadIds.add(n.id || i));
-  renderNotifInbox();
-  updateBellDot();
-}
-
-function updateBellDot() {
-  const dot = document.getElementById('bellDot');
-  if (!dot) return;
-  const unreadCount = notifCache.filter((n, i) => !notifReadIds.has(n.id || i)).length;
-  dot.style.display = unreadCount > 0 ? 'block' : 'none';
-}
-
-// ── Keyboard shortcuts ──
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
-  const screens = ['zone','task','alert','chat'];
-  const idx = parseInt(e.key) - 1;
-  if (idx >= 0 && idx < 4) {
-    const nav = document.querySelector(`[data-screen="${screens[idx]}"]`);
-    switchScreen(screens[idx], nav);
-  }
-});
-
-// ── Init ──
-async function init() {
-  await loadWorker();
-  await loadZoneScreen();
-  initGeolocation();
-  loadChatContacts();
-  // Initialize incident count for notifications
-  try { const inc = await api('/api/incidents-map'); lastIncidentCount = inc.length; } catch(e) {}
-  // Load initial notifications
-  try { notifCache = await api('/api/notifications'); updateBellDot(); } catch(e) {}
-  startNotificationPoll();
-}
-init();
-</script>
-
-<style>
-  @keyframes flashRed {
-    0%, 100% { background: var(--bg); }
-    50% { background: rgba(219,74,67,.04); }
-  }
-</style>
 </body>
 </html>

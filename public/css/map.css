@@ -1,0 +1,204 @@
+/* ── MAP SECTION ── */
+.map-section { margin: 0 16px; }
+.plant-map-container {
+  position: relative; width: 100%; overflow: visible;
+  border-radius: var(--radius-xl); border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg); touch-action: none;
+  clip-path: none;
+}
+.map-inner-wrap {
+  position: relative; width: 100%; transform-origin: 0 0;
+  transition: transform .15s ease; overflow: hidden;
+  border-radius: var(--radius-xl);
+}
+.plant-map-img { width: 100%; display: block; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.map-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+
+/* ── GPS DOT ── */
+.user-gps-dot {
+  position: absolute; z-index: 12; transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center;
+}
+.gps-dot-inner {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--gradient-brand); border: 3px solid white;
+  box-shadow: 0 4px 16px rgba(12,141,231,.3);
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.gps-accuracy {
+  position: absolute; width: 60px; height: 60px; border-radius: 50%;
+  background: rgba(12,141,231,.08); border: 1px solid rgba(12,141,231,.12);
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+}
+.gps-badge {
+  position: absolute; bottom: 8px; left: 8px; z-index: 15;
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+  border: 1px solid var(--line); font-size: 10px; font-weight: 800;
+  color: var(--ink-soft);
+}
+.gps-live { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+
+/* ── MUSTER MARKER ── */
+.muster-marker {
+  position: absolute; z-index: 10; transform: translate(-50%, -50%);
+  display: none; flex-direction: column; align-items: center;
+}
+.muster-marker-inner {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(31,155,111,.12); border: 2px solid var(--success);
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.muster-label-text {
+  font-size: 8px; font-weight: 800; color: var(--success);
+  background: rgba(255,255,255,.9); padding: 2px 6px; border-radius: 6px;
+  margin-top: 2px; white-space: nowrap;
+}
+
+/* ── ESCAPE BADGE ── */
+.escape-dist-badge {
+  position: absolute; top: 8px; left: 8px; z-index: 15;
+  display: none; padding: 6px 12px; border-radius: var(--radius-sm);
+  background: rgba(12,141,231,.9); color: white; font-size: 11px; font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+
+/* ── HAZARD BLIPS ── */
+.hazard-blip {
+  position: absolute; z-index: 8; transform: translate(-50%, -50%);
+  cursor: pointer; display: flex; flex-direction: column; align-items: center;
+}
+.blip-icon {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; border: 2px solid white;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  animation: blipPulse 3s infinite;
+}
+@keyframes blipPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+.blip-icon.hot { background: rgba(219,74,67,.9); color: white; }
+.blip-icon.crane { background: rgba(255,178,74,.9); color: white; }
+.blip-icon.confined { background: rgba(12,141,231,.85); color: white; }
+.blip-icon.team { background: rgba(149,239,186,.9); }
+.blip-label {
+  font-size: 8px; font-weight: 800; color: var(--ink);
+  background: rgba(255,255,255,.92); padding: 2px 6px; border-radius: 6px;
+  margin-top: 2px; white-space: nowrap; backdrop-filter: blur(4px);
+}
+
+/* ── WORKER DOTS ON MAP ── */
+.worker-map-dot {
+  position: absolute; z-index: 9; transform: translate(-50%, -50%);
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.wmd-circle {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 900; color: white;
+  border: 2px solid white; box-shadow: 0 3px 10px rgba(0,0,0,.2);
+}
+.wmd-name {
+  font-size: 7px; font-weight: 800; color: var(--ink);
+  background: rgba(255,255,255,.92); padding: 1px 4px; border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* ── WORKER POPUP (overflows map) ── */
+.worker-popup {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  margin-bottom: 8px; z-index: 50;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius-md); padding: 12px; min-width: 160px;
+  box-shadow: var(--shadow-lg); animation: fadeUp .2s ease;
+  white-space: nowrap;
+}
+.worker-popup::after {
+  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 6px solid transparent; border-top-color: var(--panel);
+}
+.wp-name { font-size: 13px; font-weight: 800; }
+.wp-role { font-size: 10px; color: var(--ink-soft); margin-bottom: 8px; }
+.wp-actions { display: flex; gap: 6px; }
+.wp-action {
+  flex: 1; padding: 8px; border-radius: var(--radius-sm); text-align: center;
+  font-size: 11px; font-weight: 800; cursor: pointer; border: 1px solid var(--line);
+  background: var(--panel-2); transition: all .15s;
+}
+.wp-action:active { background: var(--blue); color: white; border-color: var(--blue); }
+.wp-action.chat-action { background: rgba(12,141,231,.05); border-color: rgba(12,141,231,.15); color: var(--blue); }
+
+/* ── INCIDENT DOTS ── */
+.incident-map-dot {
+  position: absolute; z-index: 8; transform: translate(-50%, -50%);
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.imd-circle {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(255,178,74,.9); border: 2px solid white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; box-shadow: 0 3px 10px rgba(0,0,0,.2);
+}
+.imd-label {
+  font-size: 7px; font-weight: 800; color: var(--ink);
+  background: rgba(255,255,255,.88); padding: 1px 4px; border-radius: 4px;
+  max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── MAP LAYERS ── */
+.map-layers {
+  position: absolute; top: 8px; left: 8px; z-index: 18;
+  display: flex; gap: 4px;
+}
+.map-layer-btn {
+  padding: 4px 8px; border-radius: 8px;
+  background: rgba(255,255,255,.88); border: 1px solid var(--line);
+  font-size: 9px; font-weight: 800; cursor: pointer;
+  backdrop-filter: blur(8px); color: var(--ink-faint);
+  transition: all .15s;
+}
+.map-layer-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+
+/* ── MAP ZOOM CONTROLS ── */
+.map-zoom-controls {
+  position: absolute; bottom: 10px; right: 10px; z-index: 18;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.map-zoom-btn {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: rgba(255,255,255,.92); border: 1px solid var(--line);
+  backdrop-filter: blur(8px); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 800; color: var(--ink);
+  box-shadow: var(--shadow-sm); transition: all .15s;
+}
+.map-zoom-btn:active { background: var(--blue); color: white; }
+
+/* ── LOTO STRIP ── */
+.loto-strip {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 16;
+  background: rgba(219,74,67,.92); color: white; padding: 8px 12px;
+  font-size: 10px; font-weight: 800; border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  backdrop-filter: blur(8px); text-align: center;
+}
+
+/* ── ESCAPE BAR ── */
+.escape-bar {
+  margin: 12px 16px; padding: 14px 18px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; gap: 14px; cursor: pointer;
+  transition: all .2s;
+}
+.escape-bar:active { transform: scale(.98); }
+.esc-icon-box {
+  width: 42px; height: 42px; border-radius: 14px;
+  background: rgba(219,74,67,.06); border: 1px solid rgba(219,74,67,.12);
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  flex-shrink: 0;
+}
+.esc-text { flex: 1; }
+.esc-title { font-size: 13px; font-weight: 800; }
+.esc-sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.esc-arrow { font-size: 22px; color: var(--ink-faint); font-weight: 300; }
+.escape-active .escape-bar { background: rgba(12,141,231,.04); border-color: rgba(12,141,231,.15); }

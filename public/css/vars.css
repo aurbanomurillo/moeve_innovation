@@ -1,0 +1,50 @@
+:root {
+  --bg: #eef3f7;
+  --shell: #f7fafc;
+  --panel: #ffffff;
+  --panel-2: #f2f6fa;
+  --ink: #122334;
+  --ink-soft: #5f6f7e;
+  --ink-faint: #8a99a7;
+  --line: #d8e3ec;
+  --navy: #102033;
+  --navy-2: #16283d;
+  --blue: #0c8de7;
+  --blue-2: #4bc7ff;
+  --mint: #95efba;
+  --lime: #dfff67;
+  --violet: #d289ff;
+  --rose: #ff87a5;
+  --coral: #ff7b73;
+  --amber: #ffb24a;
+  --danger: #db4a43;
+  --success: #1f9b6f;
+  --gradient-brand: linear-gradient(135deg, #0c8de7 0%, #88eeb9 56%, #d289ff 100%);
+  --gradient-hero: linear-gradient(135deg, #0f2033 0%, #123554 42%, #0c8de7 100%);
+  --shadow-xl: 0 30px 80px rgba(15, 31, 49, .16);
+  --shadow-lg: 0 18px 40px rgba(15, 31, 49, .10);
+  --shadow-md: 0 10px 22px rgba(15, 31, 49, .08);
+  --shadow-sm: 0 4px 12px rgba(15, 31, 49, .06);
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(76,199,255,.14), transparent 24%),
+    radial-gradient(circle at top right, rgba(149,239,186,.14), transparent 20%),
+    linear-gradient(180deg, #f6fafc 0%, #edf3f7 100%);
+  color: var(--ink);
+  max-width: 440px; margin: 0 auto;
+  min-height: 100vh; min-height: 100dvh;
+  position: relative; overflow-x: hidden;
+}
+
+@keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(31,155,111,.4)} 75%{box-shadow:0 0 0 10px rgba(31,155,111,0)} 100%{box-shadow:0 0 0 0 rgba(31,155,111,0)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+@keyframes flashRed { 0%,100%{background:var(--bg)} 50%{background:rgba(219,74,67,.04)} }
+@keyframes typingBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <ellipse cx="50" cy="88" rx="30" ry="4" fill="#7d3c98" opacity=".2"/>
+  <path d="M30 28c-3 4-5 12-5 20v24c0 4 2 8 6 10 4 2 10 4 19 4s15-2 19-4c4-2 6-6 6-10V48c0-8-2-16-5-20" fill="#8E44AD"/>
+  <path d="M30 28c2-6 8-12 20-12s18 6 20 12" fill="#8E44AD"/>
+  <path d="M30 28c2-6 8-12 20-12s18 6 20 12" fill="white" opacity=".15"/>
+  <path d="M28 38h44M28 52h44M28 66h44" stroke="#6C3483" stroke-width="2" opacity=".35"/>
+  <path d="M40 38v28M50 38v28M60 38v28" stroke="#6C3483" stroke-width="1" stroke-dasharray="3 2" opacity=".25"/>
+  <rect x="44" y="18" width="12" height="8" rx="4" fill="#6C3483" opacity=".5"/>
+  <text x="50" y="78" text-anchor="middle" font-size="7" font-weight="bold" fill="white" opacity=".7">ANTICORTE</text>
+</svg>
