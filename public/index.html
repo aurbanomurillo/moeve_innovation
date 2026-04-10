@@ -82,9 +82,6 @@
           <button class="map-zoom-btn" id="zoomOut">−</button>
         </div>
 
-        <!-- Escape distance -->
-        <div class="escape-dist-badge" id="escapeDistBadge"></div>
-
         <!-- GPS badge -->
         <div class="gps-badge"><span class="gps-live"></span><span id="gpsBadge">GPS</span></div>
 
@@ -112,6 +109,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Escape distance badge (outside map) -->
+    <div class="escape-dist-badge" id="escapeDistBadge"></div>
 
     <!-- Escape route bar -->
     <div class="escape-active-wrap">
@@ -151,7 +151,21 @@
           <option value="PIPE-S">PIPE-S — Pipe Rack</option>
           <option value="TALLER">TALLER — Taller Mecánico</option>
         </select>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <label style="font-size:10px;font-weight:800;color:var(--ink-faint);text-transform:uppercase">Hora inicio</label>
+            <input class="admin-input" id="adminTaskStartTime" type="time" value="09:00">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:10px;font-weight:800;color:var(--ink-faint);text-transform:uppercase">Hora fin</label>
+            <input class="admin-input" id="adminTaskEndTime" type="time" value="17:00">
+          </div>
+        </div>
         <button class="admin-btn primary" onclick="adminCreateTask()">➕ Crear Tarea</button>
+      </div>
+      <div class="admin-card">
+        <h4>⚠️ Gestionar Riesgos Activos</h4>
+        <div id="adminHazardList" style="display:flex;flex-direction:column;gap:6px">Cargando...</div>
       </div>
       <div class="admin-card">
         <h4>⏱️ Demo Tareas Temporizadas</h4>
@@ -161,6 +175,15 @@
       <div class="admin-card">
         <h4>🚨 Emitir Alarma</h4>
         <button class="admin-btn danger" onclick="adminAlarm()">🚨 Alarma General</button>
+        <button class="admin-btn secondary" onclick="adminResetAlarm()" style="margin-top:8px">✅ Desactivar Alarma</button>
+      </div>
+      <div class="admin-card">
+        <h4>📋 Reportes Recibidos</h4>
+        <div id="adminIncidentList" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto">Cargando...</div>
+      </div>
+      <div class="admin-card">
+        <h4>👷 Tareas de Trabajadores</h4>
+        <div id="adminTaskList" style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto">Cargando...</div>
       </div>
     </div>
   </div>
@@ -244,6 +267,7 @@
       </div>
 
       <div class="chat-input-bar">
+        <button class="chat-mic-btn" id="chatMicBtn" onclick="startChatVoice()" title="Mensaje de voz">🎙️</button>
         <input class="chat-input" id="chatInput" placeholder="Escribe un mensaje..." autocomplete="off">
         <button class="chat-send-btn" onclick="sendMessage()">➤</button>
       </div>

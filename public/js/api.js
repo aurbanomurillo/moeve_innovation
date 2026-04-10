@@ -38,3 +38,7 @@ export function apiPost(path, body) {
 export function apiPut(path, body) {
   return api(path, { method: 'PUT', body });
 }
+
+export function apiDelete(path) {
+  return api(path, { method: 'DELETE' });
+}

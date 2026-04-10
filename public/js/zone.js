@@ -5,6 +5,16 @@ import { drawEscapeRoute, clearEscapeRoute, refreshMapOverlays, toggleMapLayer }
 
 export async function loadZoneScreen() {
   await Promise.all([loadSemaphore(), loadHazards(), loadEscapeRoute(), loadMapHazards()]);
+  // Load admin hazard panel if admin
+  if (state.currentUser?.role === 'admin' && window.loadAdminHazards) {
+    window.loadAdminHazards();
+  }
+  if (state.currentUser?.role === 'admin' && window.loadAdminIncidents) {
+    window.loadAdminIncidents();
+  }
+  if (state.currentUser?.role === 'admin' && window.loadAdminTasks) {
+    window.loadAdminTasks();
+  }
 }
 
 async function loadSemaphore() {

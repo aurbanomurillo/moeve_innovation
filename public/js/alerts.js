@@ -3,6 +3,7 @@ import { state, toast, showBanner } from './utils.js';
 import { apiGet, apiPost } from './api.js';
 
 let mediaRecorder, audioChunks = [], recordingTimer, recordSeconds = 0;
+let speechRecognition, transcribedText = '';
 
 export async function loadAlertScreen() {
   await loadRecentReports();
@@ -74,58 +75,94 @@ function startVoiceRecording() {
   const recorder = document.getElementById('voiceRecorder');
   if (!recorder) return;
 
-  if (!navigator.mediaDevices?.getUserMedia) {
-    toast('Micrófono no disponible');
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toast('Reconocimiento de voz no disponible en este navegador');
     return;
   }
 
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    recorder.classList.add('active');
-    audioChunks = [];
-    recordSeconds = 0;
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-    mediaRecorder.onstop = () => {
-      stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const data = await apiPost('/api/reports', {
-          worker_code: state.workerCode,
-          type: 'voice',
-          description: 'Mensaje de voz',
-          media_type: 'voice',
-          media_data: e.target.result,
-          lat: state.currentPos.lat,
-          lng: state.currentPos.lng
-        });
-        if (data?.ok) {
-          toast('🎙️ Audio enviado');
-          showBanner('🎙️', 'Mensaje de voz enviado a supervisión');
-          loadRecentReports();
-        }
-      };
-      reader.readAsDataURL(blob);
-    };
-    mediaRecorder.start();
+  recorder.classList.add('active');
+  transcribedText = '';
+  recordSeconds = 0;
 
-    const timeEl = recorder.querySelector('.vr-time');
-    recordingTimer = setInterval(() => {
-      recordSeconds++;
-      const m = Math.floor(recordSeconds / 60).toString().padStart(2, '0');
-      const s = (recordSeconds % 60).toString().padStart(2, '0');
-      if (timeEl) timeEl.textContent = `${m}:${s}`;
-    }, 1000);
-  }).catch(() => toast('No se pudo acceder al micrófono'));
+  // Start speech recognition
+  speechRecognition = new SpeechRecognition();
+  speechRecognition.lang = 'es-ES';
+  speechRecognition.continuous = true;
+  speechRecognition.interimResults = true;
+
+  const hintEl = recorder.querySelector('.vr-hint');
+
+  speechRecognition.onresult = (event) => {
+    let interim = '', final = '';
+    for (let i = 0; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        final += event.results[i][0].transcript + ' ';
+      } else {
+        interim += event.results[i][0].transcript;
+      }
+    }
+    transcribedText = final.trim();
+    if (hintEl) hintEl.textContent = transcribedText || interim || 'Escuchando...';
+  };
+
+  speechRecognition.onerror = (e) => {
+    console.warn('Speech recognition error:', e.error);
+    if (e.error === 'no-speech' && hintEl) hintEl.textContent = 'No se detecta voz... habla más fuerte';
+  };
+
+  speechRecognition.onend = () => {
+    // Restart if still recording (browser may stop it automatically)
+    if (recorder.classList.contains('active') && speechRecognition) {
+      try { speechRecognition.start(); } catch {}
+    }
+  };
+
+  speechRecognition.start();
+
+  const timeEl = recorder.querySelector('.vr-time');
+  if (hintEl) hintEl.textContent = 'Escuchando...';
+  recordingTimer = setInterval(() => {
+    recordSeconds++;
+    const m = Math.floor(recordSeconds / 60).toString().padStart(2, '0');
+    const s = (recordSeconds % 60).toString().padStart(2, '0');
+    if (timeEl) timeEl.textContent = `${m}:${s}`;
+  }, 1000);
 }
 
 export function stopVoiceRecording() {
   clearInterval(recordingTimer);
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
+
+  if (speechRecognition) {
+    speechRecognition.onend = null; // Prevent restart
+    speechRecognition.stop();
+    speechRecognition = null;
   }
+
   const recorder = document.getElementById('voiceRecorder');
   if (recorder) recorder.classList.remove('active');
+
+  // Send transcribed text as a report
+  const text = transcribedText.trim();
+  if (!text) {
+    toast('No se detectó texto. Intenta de nuevo.');
+    return;
+  }
+
+  apiPost('/api/reports', {
+    worker_code: state.workerCode,
+    type: 'voice',
+    description: text,
+    media_type: 'voice',
+    lat: state.currentPos.lat,
+    lng: state.currentPos.lng
+  }).then(data => {
+    if (data?.ok) {
+      toast('🎙️ Audio transcrito y enviado');
+      showBanner('🎙️', `Mensaje de voz: "${text.substring(0, 60)}..."`);
+      loadRecentReports();
+    }
+  });
 }
 
 async function triggerEmergency() {

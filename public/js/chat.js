@@ -29,7 +29,16 @@ async function loadChatContacts() {
     <div class="cc-name">SENTINEL</div>`;
   strip.appendChild(ai);
 
-  state.chatWorkers.forEach(w => {
+  // Sort: supervisors (admin role) first, then others
+  const sorted = [...state.chatWorkers].sort((a, b) => {
+    const aAdmin = a.role === 'Supervisor' || a.code === 'MG' ? -1 : 0;
+    const bAdmin = b.role === 'Supervisor' || b.code === 'MG' ? -1 : 0;
+    return aAdmin - bAdmin;
+  });
+
+  sorted.forEach(w => {
+    const isSupervisor = w.role === 'Supervisor' || w.code === 'MG';
+    const displayName = isSupervisor ? 'Supervisor' : w.name.split(' ')[0];
     const c = document.createElement('div');
     c.className = `chat-contact ${state.chatTarget === w.code ? 'active' : ''}`;
     c.onclick = () => {
@@ -41,36 +50,70 @@ async function loadChatContacts() {
     };
     c.innerHTML = `
       <div class="cc-avatar" style="background:${AVATAR_COLORS[w.code] || 'var(--blue)'}">
-        ${w.code}
+        ${isSupervisor ? '🛡️' : w.code}
         <span class="cc-online"></span>
       </div>
-      <div class="cc-name">${w.name.split(' ')[0]}</div>`;
+      <div class="cc-name">${displayName}</div>`;
     strip.appendChild(c);
   });
 }
 
-function switchChatTarget(code) {
+async function switchChatTarget(code) {
   state.chatTarget = code;
   // Update UI
   document.querySelectorAll('.chat-contact').forEach(c => c.classList.remove('active'));
   const contacts = document.querySelectorAll('.chat-contact');
   contacts.forEach(c => {
     const name = c.querySelector('.cc-name');
+    const avatar = c.querySelector('.cc-avatar');
     if ((code === 'SENTINEL_AI' && name?.textContent === 'SENTINEL') ||
-        (code !== 'SENTINEL_AI' && c.querySelector('.cc-avatar')?.textContent.trim().startsWith(code))) {
+        (code !== 'SENTINEL_AI' && (avatar?.textContent.trim().startsWith(code) || (name?.textContent === 'Supervisor' && code === 'MG')))) {
       c.classList.add('active');
     }
   });
   loadChatHistory();
 }
 
-function loadChatHistory() {
+async function loadChatHistory() {
   const msgs = document.getElementById('chatMessages');
   if (!msgs) return;
   msgs.innerHTML = '';
 
-  const history = state.chatHistory[state.chatTarget] || [];
-  history.forEach(m => appendMessage(m.text, m.sent, m.time));
+  // For AI chat, use in-memory history
+  if (state.chatTarget === 'SENTINEL_AI') {
+    const history = state.chatHistory[state.chatTarget] || [];
+    history.forEach(m => appendMessage(m.text, m.sent, m.time));
+    msgs.scrollTop = msgs.scrollHeight;
+    return;
+  }
+
+  // For worker-to-worker, load from server
+  try {
+    const allMsgs = await apiGet(`/api/messages/${state.workerCode}`);
+    if (!allMsgs) return;
+    // Filter messages between current user and target
+    const conversation = allMsgs.filter(m =>
+      (m.from_code === state.workerCode && m.to_code === state.chatTarget) ||
+      (m.from_code === state.chatTarget && m.to_code === state.workerCode)
+    ).reverse(); // oldest first
+
+    conversation.forEach(m => {
+      const isSent = m.from_code === state.workerCode;
+      const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : '';
+      appendMessage(m.message, isSent, time);
+    });
+
+    // Also append any in-memory messages not yet on server
+    const memHistory = state.chatHistory[state.chatTarget] || [];
+    const serverMsgTexts = new Set(conversation.map(m => m.message));
+    memHistory.forEach(m => {
+      if (!serverMsgTexts.has(m.text)) appendMessage(m.text, m.sent, m.time);
+    });
+  } catch {
+    // Fallback to in-memory
+    const history = state.chatHistory[state.chatTarget] || [];
+    history.forEach(m => appendMessage(m.text, m.sent, m.time));
+  }
   msgs.scrollTop = msgs.scrollHeight;
 }
 

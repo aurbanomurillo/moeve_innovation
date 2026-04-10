@@ -41,6 +41,30 @@
 .tp-section { padding: 14px 16px; border-top: 1px solid var(--line); }
 .tp-section-title { font-size: 11px; font-weight: 800; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
 
+/* ── TASK ACTIONS ── */
+.tp-actions { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; gap: 8px; }
+.task-action-btn {
+  flex: 1; padding: 10px 0; border: none; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 800; cursor: pointer; letter-spacing: .04em;
+  transition: all .15s;
+}
+.task-action-btn.start { background: var(--success); color: #fff; }
+.task-action-btn.start:active { transform: scale(.97); }
+.task-action-btn.complete { background: var(--blue); color: #fff; }
+.task-action-btn.complete:active { transform: scale(.97); }
+.task-action-btn.delete { background: var(--panel-2); color: var(--danger); border: 1px solid rgba(219,74,67,.2); }
+.task-action-btn.delete:active { transform: scale(.97); }
+.tp-check-hint {
+  font-size: 10px; font-weight: 700; color: var(--ink-faint);
+  text-align: center; margin-top: 6px;
+}
+.task-elapsed {
+  text-align: center; padding: 10px 16px; border-top: 1px solid var(--line);
+  font-family: 'SF Mono', 'Fira Code', monospace; font-size: 22px; font-weight: 900;
+  color: var(--blue); letter-spacing: .08em; background: rgba(0,122,255,.04);
+}
+.task-panel.active-task { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,122,255,.15); }
+
 /* ── CHECKLISTS ── */
 .check-item {
   display: flex; align-items: center; gap: 10px;

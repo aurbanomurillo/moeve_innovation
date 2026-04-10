@@ -77,6 +77,11 @@ db.exec(`
     critical_controls TEXT,
     description TEXT,
     unlock_at TEXT,
+    started_at TEXT,
+    completed_at TEXT,
+    elapsed_seconds INTEGER,
+    hidden_for_worker INTEGER DEFAULT 0,
+    hidden_for_admin INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
   CREATE TABLE IF NOT EXISTS hazards (
@@ -193,19 +198,19 @@ if (userCount === 0) {
   iW.run('MG','Miguel García','Supervisor','Moeve Energy','Supervisión','H-100',40,30,36.1964,-5.3845,1,1);
 
   // Tasks for JL (with unlock_at for timed demo)
-  const iT = db.prepare('INSERT INTO tasks (title,type,zone_id,worker_id,start_time,end_time,permit_code,risk_level,status,epi_required,critical_controls,description,unlock_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+  const iT = db.prepare('INSERT INTO tasks (title,type,zone_id,worker_id,start_time,end_time,permit_code,risk_level,status,epi_required,critical_controls,description,unlock_at,started_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
   iT.run('Preparación andamio H-100 Nivel 2','mechanical',1,1,'06:30','08:00','PT-2026-04812','medium','in-progress',
     JSON.stringify(['Casco','Guantes','Botas S3','Arnés']),
     JSON.stringify(['Andamio certificado con tag verde','Arnés anclado a línea de vida']),
-    'Montaje y verificación de plataforma de trabajo en cara norte del horno.', null);
+    'Montaje y verificación de plataforma de trabajo en cara norte del horno.', null, new Date().toISOString().replace('T',' ').replace(/\.\d+Z/,''));
   iT.run('Corte y preparación de spool','mechanical',1,1,'08:15','12:00','PT-2026-04815','high','scheduled',
     JSON.stringify(['Casco','Guantes anticorte','Botas S3','Arnés','Protección auditiva','Respirador ABE1','Gafas']),
     JSON.stringify(['Permiso de trabajo activo y firmado','LOTO verificado en línea 6" (tag #4812)','Malla anticaída de objetos instalada','Andamio certificado con tag verde','Arnés anclado a línea de vida','Zona despejada de izado (08:15)']),
-    'Corte y preparación de spool en línea 6" de entrada al horno H-100.', null);
+    'Corte y preparación de spool en línea 6" de entrada al horno H-100.', null, null);
   iT.run('Prefabricación spool en taller','mechanical',6,1,'12:30','14:00',null,'low','scheduled',
     JSON.stringify(['Casco','Guantes','Gafas']),
     JSON.stringify([]),
-    'Trabajo de taller sin riesgos especiales.', null);
+    'Trabajo de taller sin riesgos especiales.', null, null);
 
   // Hazards
   const iH = db.prepare('INSERT INTO hazards (type,title,description,zone_id,distance_m,direction,severity,action_required,company,start_time,end_time,lat,lng) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
@@ -242,15 +247,15 @@ if (userCount === 0) {
 
   // EPI Locations
   const iE = db.prepare('INSERT INTO epi_locations (epi_name,location,zone_code,image) VALUES (?,?,?,?)');
-  iE.run('Casco','Almacén principal — Estante A3','TALLER','/images/epi/casco.svg');
-  iE.run('Guantes','Almacén principal — Estante A5','TALLER','/images/epi/guantes.svg');
-  iE.run('Guantes anticorte','Almacén EPI especial — Armario B2','TALLER','/images/epi/guantes-anticorte.svg');
-  iE.run('Botas S3','Vestuario principal — Taquillas','TALLER','/images/epi/botas.svg');
-  iE.run('Arnés','Almacén altura — Zona dedicada C1','H-100','/images/epi/arnes.svg');
-  iE.run('Arnés + línea vida','Almacén altura — Zona dedicada C1','H-100','/images/epi/arnes.svg');
-  iE.run('Protección auditiva','Dispensador en entrada zona — Nivel 0','H-100','/images/epi/proteccion-auditiva.svg');
-  iE.run('Respirador ABE1','Almacén EPI especial — Armario B1 (control supervisor)','H-100','/images/epi/respirador.svg');
-  iE.run('Gafas','Dispensador en entrada zona — Nivel 0','H-100','/images/epi/gafas.svg');
+  iE.run('Casco','Almacén principal — Estante A3','TALLER','/images/epi/casco.jpg');
+  iE.run('Guantes','Almacén principal — Estante A5','TALLER','/images/epi/guantes.jpg');
+  iE.run('Guantes anticorte','Almacén EPI especial — Armario B2','TALLER','/images/epi/guantes-anticorte.jpg');
+  iE.run('Botas S3','Vestuario principal — Taquillas','TALLER','/images/epi/botas.jpg');
+  iE.run('Arnés','Almacén altura — Zona dedicada C1','H-100','/images/epi/arnes.jpg');
+  iE.run('Arnés + línea vida','Almacén altura — Zona dedicada C1','H-100','/images/epi/arnes+vida.jpg');
+  iE.run('Protección auditiva','Dispensador en entrada zona — Nivel 0','H-100','/images/epi/proteccion-auditiva.jpg');
+  iE.run('Respirador ABE1','Almacén EPI especial — Armario B1 (control supervisor)','H-100','/images/epi/respirador.jpg');
+  iE.run('Gafas','Dispensador en entrada zona — Nivel 0','H-100','/images/epi/gafas.jpg');
 
   // Radio channels
   const iRC = db.prepare('INSERT INTO radio_channels (channel_number,name,description,supervisor) VALUES (?,?,?,?)');
@@ -263,6 +268,11 @@ if (userCount === 0) {
 }
 
 // ── Auth Middleware ──
+// Always update EPI images to jpg (in case DB was seeded with old SVG paths)
+db.prepare("UPDATE epi_locations SET image = REPLACE(image, '.svg', '.jpg') WHERE image LIKE '%.svg'").run();
+// Fix arnés+vida to use its own image
+db.prepare("UPDATE epi_locations SET image = '/images/epi/arnes+vida.jpg' WHERE epi_name = 'Arnés + línea vida'").run();
+
 function auth(req, res, next) {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'No token' });
@@ -335,9 +345,9 @@ app.get('/api/semaphore', (req, res) => {
   res.json({ ...state, active_hazard_count: cnt });
 });
 
-app.put('/api/semaphore', (req, res) => {
+app.put('/api/semaphore', adminAuth, (req, res) => {
   const { level, title, subtitle } = req.body;
-  db.prepare('UPDATE semaphore_state SET level=?, title=?, subtitle=?, updated_at=datetime("now") WHERE id=1').run(level, title, subtitle);
+  db.prepare(`UPDATE semaphore_state SET level=?, title=?, subtitle=?, updated_at=datetime('now') WHERE id=1`).run(level, title, subtitle);
   res.json({ ok: true });
 });
 
@@ -357,7 +367,7 @@ app.get('/api/hazards', (req, res) => {
 app.get('/api/tasks/:worker_code', (req, res) => {
   const w = db.prepare('SELECT id FROM workers WHERE code = ?').get(req.params.worker_code);
   if (!w) return res.status(404).json({ error: 'Not found' });
-  const tasks = db.prepare('SELECT t.*, z.code as zone_code, z.name as zone_name FROM tasks t LEFT JOIN zones z ON t.zone_id = z.id WHERE t.worker_id = ? ORDER BY t.start_time').all(w.id);
+  const tasks = db.prepare('SELECT t.*, z.code as zone_code, z.name as zone_name FROM tasks t LEFT JOIN zones z ON t.zone_id = z.id WHERE t.worker_id = ? AND t.hidden_for_worker = 0 ORDER BY t.start_time').all(w.id);
   const now = new Date().toISOString();
   tasks.forEach(t => {
     t.locked = t.unlock_at ? t.unlock_at > now : false;
@@ -369,24 +379,66 @@ app.get('/api/tasks/:worker_code', (req, res) => {
 });
 
 app.put('/api/tasks/:id/status', (req, res) => {
-  db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run(req.body.status, req.params.id);
+  const { status } = req.body;
+  let sql = 'UPDATE tasks SET status = ?';
+  const params = [status];
+  if (status === 'in-progress') {
+    sql += ", started_at = datetime('now')";
+  }
+  if (status === 'completed') {
+    sql += ", completed_at = datetime('now')";
+    // Calculate elapsed seconds from started_at
+    const t = db.prepare('SELECT started_at FROM tasks WHERE id = ?').get(req.params.id);
+    if (t && t.started_at) {
+      const elapsed = Math.round((Date.now() - new Date(t.started_at + 'Z').getTime()) / 1000);
+      sql += ', elapsed_seconds = ?';
+      params.push(elapsed);
+    }
+  }
+  sql += ' WHERE id = ?';
+  params.push(req.params.id);
+  db.prepare(sql).run(...params);
   res.json({ ok: true });
 });
 
 // ════════════════════════════════
 // CAN I START
 // ════════════════════════════════
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return -1;
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + (m || 0);
+}
+
 app.get('/api/can-i-start/:worker_code', (req, res) => {
   const w = db.prepare('SELECT * FROM workers WHERE code = ?').get(req.params.worker_code);
   if (!w) return res.status(404).json({ error: 'Not found' });
-  const hazards = db.prepare("SELECT * FROM hazards WHERE zone_id = (SELECT id FROM zones WHERE code = ?) AND active = 1 AND severity IN ('high','critical')").all(w.current_zone);
+
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // Only get hazards that are currently active by time window
+  const allHazards = db.prepare("SELECT * FROM hazards WHERE zone_id = (SELECT id FROM zones WHERE code = ?) AND active = 1 AND severity IN ('high','critical')").all(w.current_zone);
+  const hazards = allHazards.filter(h => {
+    if (!h.start_time || !h.end_time) return true;
+    const start = parseTimeToMinutes(h.start_time);
+    const end = parseTimeToMinutes(h.end_time);
+    return nowMinutes >= start && nowMinutes <= end;
+  });
+
   const conflicts = db.prepare("SELECT * FROM simops_conflicts WHERE zone_id = (SELECT id FROM zones WHERE code = ?) AND status IN ('active','blocked')").all(w.current_zone);
   let status = 'ready', reason = 'Todos los controles verificados. Puedes comenzar tu tarea.', icon = '✅';
   if (conflicts.some(c => c.status === 'blocked')) {
     status = 'blocked'; reason = 'Existe una restricción absoluta activa en tu zona. Contacta con tu supervisor.'; icon = '🛑';
   } else if (hazards.length > 0) {
     const crane = hazards.find(h => h.type === 'crane');
-    if (crane) { status = 'wait'; reason = `Izado activo hasta ${crane.end_time}. Zona de exclusión de ${crane.distance_m}m.`; icon = '⏳'; }
+    if (crane) {
+      const endMin = parseTimeToMinutes(crane.end_time);
+      const remaining = endMin - nowMinutes;
+      status = 'wait';
+      reason = `Izado activo. Quedan ~${remaining} min (hasta las ${crane.end_time}). Zona de exclusión de ${crane.distance_m}m.`;
+      icon = '⏳';
+    }
     else { status = 'ready'; reason = `Puedes empezar con precaución. ${hazards.length} riesgo(s) activo(s).`; icon = '✅'; }
   }
   res.json({ status, reason, icon, hazard_count: hazards.length, conflict_count: conflicts.length });
@@ -413,9 +465,17 @@ app.post('/api/reports', (req, res) => {
   else if (desc.includes('fuego') || desc.includes('soldadura')) category = 'Trabajo en caliente';
   else if (desc.includes('eléctric')) category = 'Riesgo eléctrico';
   else if (type === 'near_miss') category = 'Near Miss';
-  const r = db.prepare('INSERT INTO reports (worker_id,type,description,zone_id,category,status,media_type,media_data,lat,lng,ai_summary,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime("now"))').run(w.id,type,description,zone_id||null,category,'sent',media_type||'text',media_data||null,lat||null,lng||null,description);
-  // Create notification for admin
-  db.prepare('INSERT INTO app_notifications (type,title,detail,icon,severity,target_role) VALUES (?,?,?,?,?,?)').run('report','Nuevo reporte: '+category,(description||'').substring(0,100),'📋','info','admin');
+  const r = db.prepare(`INSERT INTO reports (worker_id,type,description,zone_id,category,status,media_type,media_data,lat,lng,ai_summary,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))`).run(w.id,type,description,zone_id||null,category,'sent',media_type||'text',media_data||null,lat||null,lng||null,description);
+  // Create notification for admin with type-specific icon
+  const reportIcons = { near_miss: '⚠️', photo: '📸', voice: '🎙️', observation: '👁️', emergency: '🆘' };
+  db.prepare('INSERT INTO app_notifications (type,title,detail,icon,severity,target_role) VALUES (?,?,?,?,?,?)').run(
+    'report',
+    `Nuevo reporte (${type}): ${category}`,
+    `${worker_code}: ${(description||'Sin descripción').substring(0,120)}`,
+    reportIcons[type] || '📋',
+    type === 'emergency' ? 'critical' : 'warning',
+    'admin'
+  );
   res.json({ ok: true, id: r.lastInsertRowid, category });
 });
 
@@ -563,7 +623,8 @@ app.post('/api/chat', (req, res) => {
 // ════════════════════════════════
 // NOTIFICATIONS
 // ════════════════════════════════
-app.get('/api/notifications', (req, res) => {
+app.get('/api/notifications', auth, (req, res) => {
+  const userRole = req.user.role;
   const notifs = [];
   db.prepare("SELECT * FROM hazards WHERE active = 1 ORDER BY severity DESC").all().forEach(h =>
     notifs.push({ id:'h-'+h.id, type:'hazard', icon:'⚠️', title:h.title, detail:`${h.distance_m}m ${h.direction} · Severidad: ${h.severity}`, time:h.start_time, severity:h.severity }));
@@ -573,8 +634,8 @@ app.get('/api/notifications', (req, res) => {
   if (crit.length) notifs.push({ id:'wc-1', type:'workers', icon:'👷', title:`${crit.length} trabajadores en zonas de riesgo`, detail:crit.map(w=>w.name.split(' ')[0]+' → '+w.zone_name).join(', '), time:new Date().toISOString(), severity:'warning' });
   db.prepare("SELECT r.*, w.name as worker_name FROM reports r LEFT JOIN workers w ON r.worker_id = w.id ORDER BY r.created_at DESC LIMIT 5").all().forEach(r =>
     notifs.push({ id:'r-'+r.id, type:'report', icon:'📋', title:'Reporte: '+(r.category||r.type), detail:r.description||r.ai_summary||'', time:r.created_at, severity:'info' }));
-  // App notifications (EPI changes, etc.)
-  db.prepare("SELECT * FROM app_notifications ORDER BY created_at DESC LIMIT 10").all().forEach(n =>
+  // App notifications filtered by user role
+  db.prepare("SELECT * FROM app_notifications WHERE target_role = 'all' OR target_role = ? ORDER BY created_at DESC LIMIT 10").all(userRole).forEach(n =>
     notifs.push({ id:'an-'+n.id, type:n.type, icon:n.icon, title:n.title, detail:n.detail||'', time:n.created_at, severity:n.severity }));
   res.json(notifs);
 });
@@ -617,6 +678,56 @@ app.post('/api/admin/alarm', adminAuth, (req, res) => {
   const { title, detail, severity } = req.body;
   db.prepare("UPDATE semaphore_state SET level=?, title=?, subtitle=?, updated_at=datetime('now') WHERE id=1").run(severity === 'critical' ? 'red' : 'yellow', title || 'ALERTA', detail || '');
   db.prepare('INSERT INTO app_notifications (type,title,detail,icon,severity,target_role) VALUES (?,?,?,?,?,?)').run('alarm', title || 'Alarma del supervisor', detail || '', '🚨', severity || 'warning', 'all');
+  res.json({ ok: true });
+});
+
+// Admin: deactivate a hazard
+app.put('/api/admin/hazards/:id/toggle', adminAuth, (req, res) => {
+  const h = db.prepare('SELECT * FROM hazards WHERE id = ?').get(req.params.id);
+  if (!h) return res.status(404).json({ error: 'Not found' });
+  const newActive = h.active ? 0 : 1;
+  db.prepare('UPDATE hazards SET active = ? WHERE id = ?').run(newActive, req.params.id);
+  // Update semaphore based on remaining active hazards
+  const cnt = db.prepare("SELECT COUNT(*) as c FROM hazards WHERE active = 1 AND severity IN ('high','critical')").get().c;
+  if (cnt === 0) {
+    db.prepare("UPDATE semaphore_state SET level='green', title='ZONA SEGURA — Sin riesgos activos', subtitle='Todos los riesgos resueltos' WHERE id=1").run();
+  } else {
+    db.prepare("UPDATE semaphore_state SET level='yellow', title=?, subtitle=? WHERE id=1").run(`PRECAUCIÓN — ${cnt} riesgo(s) activo(s)`, '');
+  }
+  db.prepare('INSERT INTO app_notifications (type,title,detail,icon,severity,target_role) VALUES (?,?,?,?,?,?)').run('hazard_update', `Riesgo ${newActive ? 'activado' : 'desactivado'}: ${h.title}`, '', '⚠️', 'info', 'all');
+  res.json({ ok: true, active: newActive });
+});
+
+// Admin: update task status (complete, cancel, etc.)
+app.put('/api/admin/tasks/:id/status', adminAuth, (req, res) => {
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: 'status required' });
+  const t = db.prepare('SELECT t.*, w.code as worker_code FROM tasks t LEFT JOIN workers w ON t.worker_id = w.id WHERE t.id = ?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Not found' });
+  db.prepare('UPDATE tasks SET status = ? WHERE id = ?').run(status, req.params.id);
+  db.prepare('INSERT INTO app_notifications (type,title,detail,icon,severity,target_role) VALUES (?,?,?,?,?,?)').run('task_update', `Tarea ${status}: ${t.title}`, `Asignada a: ${t.worker_code}`, '📋', 'info', 'all');
+  res.json({ ok: true });
+});
+
+// Admin: get all tasks for all workers
+app.get('/api/admin/tasks', adminAuth, (req, res) => {
+  res.json(db.prepare('SELECT t.*, z.name as zone_name, w.name as worker_name, w.code as worker_code FROM tasks t LEFT JOIN zones z ON t.zone_id = z.id LEFT JOIN workers w ON t.worker_id = w.id WHERE t.hidden_for_admin = 0 ORDER BY t.status, t.start_time').all());
+});
+
+// Delete (hide) task for worker or admin
+app.delete('/api/tasks/:id', (req, res) => {
+  const { target } = req.query; // 'worker' or 'admin'
+  if (target === 'admin') {
+    db.prepare('UPDATE tasks SET hidden_for_admin = 1 WHERE id = ?').run(req.params.id);
+  } else {
+    db.prepare('UPDATE tasks SET hidden_for_worker = 1 WHERE id = ?').run(req.params.id);
+  }
+  res.json({ ok: true });
+});
+
+// Admin: delete task from worker view
+app.delete('/api/admin/tasks/:id/worker', adminAuth, (req, res) => {
+  db.prepare('UPDATE tasks SET hidden_for_worker = 1 WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 

@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <ellipse cx="50" cy="68" rx="38" ry="6" fill="#e6c619" opacity=".3"/>
-  <path d="M50 12c-2 0-3.5 1.2-4 3l-1 4c-8 2-16 7-21 12-3 3-4.5 6-4 9l2 8c1 3 4 5 7 5l2-.3c3 8 10 14 19 14s16-6 19-14l2 .3c3 0 6-2 7-5l2-8c.5-3-1-6-4-9-5-5-13-10-21-12l-1-4c-.5-1.8-2-3-4-3z" fill="#FFD700"/>
-  <path d="M50 12c-2 0-3.5 1.2-4 3l-1 4c-8 2-16 7-21 12-3 3-4.5 6-4 9l2 8c1 3 4 5 7 5l2-.3c3 8 10 14 19 14s16-6 19-14l2 .3c3 0 6-2 7-5l2-8c.5-3-1-6-4-9-5-5-13-10-21-12l-1-4c-.5-1.8-2-3-4-3z" fill="url(#hg)" opacity=".4"/>
-  <path d="M19 40c5-5 13-10 21-12h20c8 2 16 7 21 12" stroke="#DAA520" stroke-width="1.5" fill="none"/>
-  <path d="M50 14v10" stroke="#DAA520" stroke-width="3" stroke-linecap="round"/>
-  <rect x="22" y="56" width="56" height="4" rx="2" fill="#DAA520" opacity=".6"/>
-  <defs><linearGradient id="hg" x1="50" y1="12" x2="50" y2="67"><stop stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#FFD700" stop-opacity="0"/></linearGradient></defs>
-</svg>

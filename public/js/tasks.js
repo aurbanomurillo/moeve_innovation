@@ -1,8 +1,9 @@
 /* ── SENTINEL · Tasks Module ── */
 import { state, safeParse, formatCountdown, toast } from './utils.js';
-import { apiGet, apiPost } from './api.js';
+import { apiGet, apiPost, apiPut } from './api.js';
 
 let unlockTimers = [];
+let elapsedTimers = [];
 
 export async function loadTaskScreen() {
   await Promise.all([loadCanIStart(), loadTasks(), loadEpiCards()]);
@@ -31,6 +32,8 @@ async function loadTasks() {
   // Clear old timers
   unlockTimers.forEach(t => clearInterval(t));
   unlockTimers = [];
+  elapsedTimers.forEach(t => clearInterval(t));
+  elapsedTimers = [];
 
   container.innerHTML = '';
   tasks.forEach(t => {
@@ -38,11 +41,30 @@ async function loadTasks() {
     const controls = safeParse(t.critical_controls);
     const colorMap = { low: 'var(--success)', medium: 'var(--amber)', high: 'var(--danger)' };
     const statusLabel = { 'in-progress': '🔄 En curso', scheduled: '📋 Programada', completed: '✅ Completada' };
+    const totalChecks = controls.length;
+
+    // Build action buttons based on status
+    let actionButtons = '';
+    if (!t.locked && t.status === 'scheduled') {
+      actionButtons = `<div class="tp-actions"><button class="task-action-btn start" id="startBtn-${t.id}" onclick="window.startTask(${t.id})" ${totalChecks > 0 ? 'disabled style="opacity:.4;pointer-events:none"' : ''}>▶️ Iniciar Tarea</button>${totalChecks > 0 ? `<div class="tp-check-hint" id="checkHint-${t.id}">Marca todos los controles para iniciar</div>` : ''}</div>`;
+    } else if (t.status === 'in-progress') {
+      actionButtons = `
+        <div class="task-elapsed" id="elapsed-${t.id}">⏱️ 00:00:00</div>
+        <div class="tp-actions"><button class="task-action-btn complete" onclick="window.completeTask(${t.id})">✅ Finalizar Tarea</button></div>`;
+    } else if (t.status === 'completed') {
+      const elapsedSec = t.elapsed_seconds || 0;
+      const eh = Math.floor(elapsedSec / 3600).toString().padStart(2, '0');
+      const em = Math.floor((elapsedSec % 3600) / 60).toString().padStart(2, '0');
+      const es = (elapsedSec % 60).toString().padStart(2, '0');
+      actionButtons = `
+        <div class="task-elapsed" style="color:var(--success)">✅ Tiempo total: ${eh}:${em}:${es}</div>
+        <div class="tp-actions"><button class="task-action-btn delete" onclick="window.deleteTask(${t.id})">🗑️ Eliminar Tarea</button></div>`;
+    }
 
     const panel = document.createElement('div');
     panel.className = `task-detail`;
     panel.innerHTML = `
-      <div class="task-panel ${t.locked ? 'locked' : ''}" style="position:relative">
+      <div class="task-panel ${t.locked ? 'locked' : ''} ${t.status === 'in-progress' ? 'active-task' : ''}" style="position:relative" data-task-id="${t.id}">
         <div class="tp-header">
           <div class="tp-color" style="background:${colorMap[t.risk_level] || 'var(--blue)'}"></div>
           <div class="tp-info">
@@ -59,11 +81,11 @@ async function loadTasks() {
             ${epi.map(e => `<span style="padding:4px 10px;border-radius:8px;background:var(--panel-2);font-size:11px;font-weight:700;border:1px solid var(--line)">${e}</span>`).join('')}
           </div>
         </div>` : ''}
-        ${!t.locked && controls.length ? `
-        <div class="tp-section">
+        ${!t.locked && controls.length && t.status !== 'completed' ? `
+        <div class="tp-section tp-checks" data-task-id="${t.id}" data-total="${totalChecks}">
           <div class="tp-section-title">🔒 Controles Críticos</div>
           ${controls.map(c => `
-            <div class="check-item" onclick="this.classList.toggle('checked')">
+            <div class="check-item" onclick="this.classList.toggle('checked'); window.checkTaskControls(${t.id})">
               <div class="check-box">✓</div>
               <span>${c}</span>
             </div>`).join('')}
@@ -72,8 +94,26 @@ async function loadTasks() {
         <div class="tp-section">
           <div style="font-size:12px;color:var(--ink-soft);line-height:1.6">${t.description}</div>
         </div>` : ''}
+        ${actionButtons || ''}
       </div>`;
     container.appendChild(panel);
+
+    // Elapsed timer for in-progress tasks
+    if (t.status === 'in-progress' && t.started_at) {
+      const elapsedEl = panel.querySelector(`#elapsed-${t.id}`);
+      if (elapsedEl) {
+        const startTime = new Date(t.started_at + 'Z').getTime();
+        const updateElapsed = () => {
+          const diff = Date.now() - startTime;
+          const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+          const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+          const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+          elapsedEl.textContent = `⏱️ ${h}:${m}:${s}`;
+        };
+        updateElapsed();
+        elapsedTimers.push(setInterval(updateElapsed, 1000));
+      }
+    }
 
     // Countdown timer for locked tasks
     if (t.locked && t.unlock_remaining_ms > 0) {
